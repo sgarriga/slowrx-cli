@@ -4,11 +4,11 @@ Slowrx is an SSTV decoder for Linux created by Oona Räisänen (OH2EIQ [at] sral
 http://windytan.github.io/slowrx/<br>
 It uses a GTK GUI and reads audio from a soundcard. Images may be saved in PNG format.<br>
 
-slowrx-cli is a hack that runs on the command line (no GUI), reads a WAV file, and writes a BMP.
+slowrx-cli is a hack that runs on the command line (no GUI), reads a 44100 samples per second WAV file, and writes a BMP.
 
 Requirements
 ------------
-* Linux
+* Linux (I'm using a Raspberry Pi)
 * FFTW 3 (`libfftw3-dev`)
 
 Compiling
