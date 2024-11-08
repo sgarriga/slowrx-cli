@@ -1,10 +1,21 @@
-#include <stdlib.h>
+/*
+   Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
+   Hacked Around : 2024, Stephen Garriga
+
+   Permission to use, copy, modify, and/or distribute this software for any
+   purpose with or without fee is hereby granted, provided that the above
+   copyright notice and this permission notice appear in all copies.
+
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <math.h>
-#include <gtk/gtk.h>
-#include <alsa/asoundlib.h>
-
-#include <fftw3.h>
-
 #include "common.h"
 
 /* 
@@ -15,161 +26,129 @@
  *
  */
 
-guchar GetVIS () {
+uint8_t getVIS () {
 
-  int        selmode, ptr=0;
-  int        VIS = 0, Parity = 0, HedrPtr = 0;
-  guint      FFTLen = 2048, i=0, j=0, k=0, MaxBin = 0;
-  double     Power[2048] = {0}, HedrBuf[100] = {0}, tone[100] = {0}, Hann[882] = {0};
-  gboolean   gotvis = FALSE;
-  guchar     Bit[8] = {0}, ParityBit = 0;
+	int VIS = 0, Parity = 0, HedrPtr = 0;
+	int FFTLen = 2048, i=0, j=0, k=0, MaxBin = 0;
+	double Power[2048] = {0}, HedrBuf[100] = {0}, tone[100] = {0}, Hann[882] = {0};
+	bool got_VIS = false;
+	uint8_t Bit[8] = {0}, ParityBit = 0;
 
-  for (i = 0; i < FFTLen; i++) fft.in[i]    = 0;
+	for (i = 0; i < FFTLen; i++)
+		fft.in[i] = 0;
 
-  // Create 20ms Hann window
-  for (i = 0; i < 882; i++) Hann[i] = 0.5 * (1 - cos( (2 * M_PI * (double)i) / 881 ) );
+	// Create 20ms Hann window
+	for (i = 0; i < 882; i++)
+		Hann[i] = 0.5 * (1 - cos( (2 * M_PI * (double)i) / 881 ) );
 
-  ManualActivated = FALSE;
-  
-  printf("Waiting for header\n");
+	printf("Searching for SSTV header\n");
 
-  gdk_threads_enter();
-  gtk_statusbar_push( GTK_STATUSBAR(gui.statusbar), 0, "Listening" );
-  gdk_threads_leave();
+	while ( !got_VIS && current_sample < wav_sample_count ) {
 
-  while ( TRUE ) {
+		if (verbose)
+			printf("Header/VIS scan starting %s\n", wav_elapsed(current_sample));
 
-    if (Abort || ManualResync) return(0);
+		// Apply Hann window
+		for (i = 0; i < 882; i++)
+			fft.in[i] = wav_samples[current_sample + i] * Hann[i];
 
-    // Read 10 ms from sound card
-    readPcm(441);
+		// FFT of last 20 ms
+		fftw_execute(fft.plan2048);
 
-    // Apply Hann window
-    for (i = 0; i < 882; i++) fft.in[i] = pcm.Buffer[pcm.WindowPtr + i - 441] / 32768.0 * Hann[i];
+		// Find the bin with most power
+		MaxBin = 0;
+		for (i = 0; i <= get_bin(6000, FFTLen); i++) {
+			Power[i] = power(fft.out[i]);
+			if ( (i >= get_bin(500,FFTLen) && i < get_bin(3300,FFTLen)) &&
+					(MaxBin == 0 || Power[i] > Power[MaxBin]))
+				MaxBin = i;
+		}
 
-    // FFT of last 20 ms
-    fftw_execute(fft.Plan2048);
+		// Find the peak frequency by Gaussian interpolation
+		if (MaxBin > get_bin(500, FFTLen) && MaxBin < get_bin(3300, FFTLen) &&
+				Power[MaxBin] > 0 && Power[MaxBin+1] > 0 && Power[MaxBin-1] > 0)
+			HedrBuf[HedrPtr] = MaxBin +            (log( Power[MaxBin + 1] / Power[MaxBin - 1] )) /
+				(2 * log( pow(Power[MaxBin], 2) / (Power[MaxBin + 1] * Power[MaxBin - 1])));
+		else
+			HedrBuf[HedrPtr] = HedrBuf[(HedrPtr-1) % 45];
 
-    // Find the bin with most power
-    MaxBin = 0;
-    for (i = 0; i <= GetBin(6000, FFTLen); i++) {
-      Power[i] = power(fft.out[i]);
-      if ( (i >= GetBin(500,FFTLen) && i < GetBin(3300,FFTLen)) &&
-           (MaxBin == 0 || Power[i] > Power[MaxBin]))
-        MaxBin = i;
-    }
+		// In Hertz
+		HedrBuf[HedrPtr] = HedrBuf[HedrPtr] / FFTLen * wav_sample_rate;
 
-    // Find the peak frequency by Gaussian interpolation
-    if (MaxBin > GetBin(500, FFTLen) && MaxBin < GetBin(3300, FFTLen) &&
-        Power[MaxBin] > 0 && Power[MaxBin+1] > 0 && Power[MaxBin-1] > 0)
-         HedrBuf[HedrPtr] = MaxBin +            (log( Power[MaxBin + 1] / Power[MaxBin - 1] )) /
-                             (2 * log( pow(Power[MaxBin], 2) / (Power[MaxBin + 1] * Power[MaxBin - 1])));
-    else HedrBuf[HedrPtr] = HedrBuf[(HedrPtr-1) % 45];
+		// Header buffer holds 45 * 10 msec = 450 msec
+		HedrPtr = (HedrPtr + 1) % 45;
 
-    // In Hertz
-    HedrBuf[HedrPtr] = HedrBuf[HedrPtr] / FFTLen * 44100;
+		// Frequencies in the last 450 msec
+		for (i = 0; i < 45; i++)
+			tone[i] = HedrBuf[(HedrPtr + i) % 45];
 
-    // Header buffer holds 45 * 10 msec = 450 msec
-    HedrPtr = (HedrPtr + 1) % 45;
+		// Is there a pattern that looks like (the end of) a calibration header + VIS?
+		// Tolerance ±25 Hz
+		shift = 0;
+		got_VIS = false;
+		for (i = 0; i < 3; i++) {
+			if (shift != 0)
+				break;
+			for (j = 0; j < 3; j++) {
+				if ( (tone[1*3+i]  > tone[0+j] - 25  && tone[1*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
+						(tone[2*3+i]  > tone[0+j] - 25  && tone[2*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
+						(tone[3*3+i]  > tone[0+j] - 25  && tone[3*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
+						(tone[4*3+i]  > tone[0+j] - 25  && tone[4*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
+						(tone[5*3+i]  > tone[0+j] - 725 && tone[5*3+i]  < tone[0+j] - 675) && // 1200 Hz start bit
+														      // ...8 VIS bits...
+						(tone[14*3+i] > tone[0+j] - 725 && tone[14*3+i] < tone[0+j] - 675)) { // 1200 Hz stop bit
 
-    // Frequencies in the last 450 msec
-    for (i = 0; i < 45; i++) tone[i] = HedrBuf[(HedrPtr + i) % 45];
+					// Attempt to read VIS
 
-    // Is there a pattern that looks like (the end of) a calibration header + VIS?
-    // Tolerance ±25 Hz
-    CurrentPic.HedrShift = 0;
-    gotvis    = FALSE;
-    for (i = 0; i < 3; i++) {
-      if (CurrentPic.HedrShift != 0) break;
-      for (j = 0; j < 3; j++) {
-        if ( (tone[1*3+i]  > tone[0+j] - 25  && tone[1*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
-             (tone[2*3+i]  > tone[0+j] - 25  && tone[2*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
-             (tone[3*3+i]  > tone[0+j] - 25  && tone[3*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
-             (tone[4*3+i]  > tone[0+j] - 25  && tone[4*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
-             (tone[5*3+i]  > tone[0+j] - 725 && tone[5*3+i]  < tone[0+j] - 675) && // 1200 Hz start bit
-                                                                                   // ...8 VIS bits...
-             (tone[14*3+i] > tone[0+j] - 725 && tone[14*3+i] < tone[0+j] - 675)    // 1200 Hz stop bit
-           ) {
+					got_VIS = true;
+					for (k = 0; k < 8; k++) {
+						if      (tone[6*3+i+3*k] > tone[0+j] - 625 && tone[6*3+i+3*k] < tone[0+j] - 575)
+							Bit[k] = 0;
+						else if (tone[6*3+i+3*k] > tone[0+j] - 825 && tone[6*3+i+3*k] < tone[0+j] - 775
+							) Bit[k] = 1;
+						else { // erroneous bit
+							got_VIS = false;
+							break;
+						}
+					}
+					if (got_VIS) {
+						shift = tone[0+j] - 1900;
 
-          // Attempt to read VIS
+						VIS = Bit[0] + (Bit[1] << 1) + (Bit[2] << 2) + (Bit[3] << 3) + (Bit[4] << 4) + (Bit[5] << 5) + (Bit[6] << 6);
+						ParityBit = Bit[7];
 
-          gotvis = TRUE;
-          for (k = 0; k < 8; k++) {
-            if      (tone[6*3+i+3*k] > tone[0+j] - 625 && tone[6*3+i+3*k] < tone[0+j] - 575) Bit[k] = 0;
-            else if (tone[6*3+i+3*k] > tone[0+j] - 825 && tone[6*3+i+3*k] < tone[0+j] - 775) Bit[k] = 1;
-            else { // erroneous bit
-              gotvis = FALSE;
-              break;
-            }
-          }
-          if (gotvis) {
-            CurrentPic.HedrShift = tone[0+j] - 1900;
+						printf("  VIS %d (%02Xh) @ %+d Hz\n", VIS, VIS, shift);
 
-            VIS = Bit[0] + (Bit[1] << 1) + (Bit[2] << 2) + (Bit[3] << 3) + (Bit[4] << 4) +
-                 (Bit[5] << 5) + (Bit[6] << 6);
-            ParityBit = Bit[7];
+						Parity = Bit[0] ^ Bit[1] ^ Bit[2] ^ Bit[3] ^ Bit[4] ^ Bit[5] ^ Bit[6];
 
-            printf("  VIS %d (%02Xh) @ %+d Hz\n", VIS, VIS, CurrentPic.HedrShift);
+						if (VISmap[VIS] == R12BW)
+							Parity = !Parity;
 
-            Parity = Bit[0] ^ Bit[1] ^ Bit[2] ^ Bit[3] ^ Bit[4] ^ Bit[5] ^ Bit[6];
+						if (Parity != ParityBit) {
+							printf("  Parity fail\n");
+							got_VIS = false;
+						}
+						else if (VISmap[VIS] == UNKNOWN) {
+							printf("  Unknown VIS\n");
+							got_VIS = false;
+						} 
+						else {
+							break;
+						}
+					}
+				}
+			}
+		}
 
-            if (VISmap[VIS] == R12BW) Parity = !Parity;
+		current_sample += 441; // ??
+	}
 
-            if (Parity != ParityBit) {
-              printf("  Parity fail\n");
-              gotvis = FALSE;
-            } else if (VISmap[VIS] == UNKNOWN) {
-              printf("  Unknown VIS\n");
-              gotvis = FALSE;
-            } else {
-              gdk_threads_enter();
-              gtk_combo_box_set_active (GTK_COMBO_BOX(gui.combo_mode), VISmap[VIS]-1);
-              gtk_spin_button_set_value (GTK_SPIN_BUTTON(gui.spin_shift), CurrentPic.HedrShift);
-              gdk_threads_leave();
-              break;
-            }
-          }
-        }
-      }
-    }
+	// Skip the rest of the stop bit
+	current_sample += 20e-3 * wav_sample_rate;
 
-    if (gotvis)
-     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(gui.tog_rx))) break;
+	if (VISmap[VIS] != UNKNOWN)
+		return VISmap[VIS];
 
-    // Manual start
-    if (ManualActivated) {
-
-      gdk_threads_enter();
-      gtk_widget_set_sensitive( gui.frame_manual, FALSE );
-      gtk_widget_set_sensitive( gui.combo_card,   FALSE );
-      gdk_threads_leave();
-
-      selmode   = gtk_combo_box_get_active (GTK_COMBO_BOX(gui.combo_mode)) + 1;
-      CurrentPic.HedrShift = gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON(gui.spin_shift));
-      VIS = 0;
-      for (i=0; i<0x80; i++) {
-        if (VISmap[i] == selmode) {
-          VIS = i;
-          break;
-        }
-      }
-
-      break;
-    }
-
-    if (++ptr == 10) {
-      setVU(Power, 2048, 6, FALSE);
-      ptr = 0;
-    }
-
-    pcm.WindowPtr += 441;
-  }
-
-  // Skip the rest of the stop bit
-  readPcm(20e-3 * 44100);
-  pcm.WindowPtr += 20e-3 * 44100;
-
-  if (VISmap[VIS] != UNKNOWN) return VISmap[VIS];
-  else                        printf("  No VIS found\n");
-  return 0;
+	printf("  No VIS found\n");
+	return 0;
 }
