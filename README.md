@@ -1,43 +1,28 @@
 slowrx
 ======
+Slowrx is an SSTV decoder for Linux created by Oona Räisänen (OH2EIQ [at] sral.fi).<br>
+http://windytan.github.io/slowrx/<br>
+It uses a GTK GUI and reads audio from a soundcard. Images may be saved in PNG format.<br>
 
-Slowrx is an SSTV decoder for Linux.
-
-Created by Oona Räisänen (OH2EIQ [at] sral.fi).
-
-http://windytan.github.io/slowrx/
-
-Features
---------
-
-* Support for a multitude of modes (see `modespec.c` for a list)
-* Detect frequency-shifted signals – no need to fine-tune the radio
-* Automatic slant correction, also manual adjustments are simple
-* Adaptive noise reduction
-* Decode digital FSK ID
-* Save received pictures as PNG
-* Written in C99
+slowrx-cli is a hack that runs on the command line (no GUI), reads a WAV file, and writes a BMP.
 
 Requirements
 ------------
-
 * Linux
-* Alsa (`libasound2-dev`)
-* Gtk+ 3.4 (`libgtk-3-dev`)
 * FFTW 3 (`libfftw3-dev`)
-
-And, obviously:
-
-* shortwave radio with SSB
-* computer with sound card
-* means of getting sound from radio to sound card
 
 Compiling
 ---------
-
 `make`
 
 Running
 -------
+`./slowrx-cli {opts} filename`<br>
+`  -a           adaptive (default)`<br>
+`  -na          not adaptive`<br>
+`  -o filename  output bitmap filename (default result.bmp)`<br>
+`  -v           verbose output`<br>
+`  -r float     override WAV sample rate, Hz`<br>
+`  -s int       sync. adjustment (default 0.0)`<br>
+`  -h           show this information`<br>
 
-`./slowrx`
