@@ -22,6 +22,8 @@
 #include "bmp.h"
 
 extern bool verbose;
+extern bool flip_x;
+extern bool flip_y;
 
 #define BYTES_PER_PIXEL  3
 #define FILE_HEADER_SIZE 14
@@ -48,6 +50,10 @@ int bmp_init(char *fname, uint16_t height_in, uint16_t width_in)
 
 void bmp_plot(uint16_t x, uint16_t y, BMP_RGB rgb, uint8_t val) { 
 	uint8_t (*in_mem_bmp_arr)[height][width][BYTES_PER_PIXEL] = (uint8_t (*)[height][width][BYTES_PER_PIXEL])in_mem_bmp;
+         if (flip_x)
+		x = 1 + width - x;
+         if (!flip_y)
+		y = 1 + height - y;
          if (verbose)
 		printf("Bimap plot @ %p\n", in_mem_bmp_arr[y][x][(int)rgb]);
 	(*in_mem_bmp_arr)[y][x][(int)rgb] = val; 
@@ -55,8 +61,8 @@ void bmp_plot(uint16_t x, uint16_t y, BMP_RGB rgb, uint8_t val) {
 
 int bmp_write()
 {
-	FILE* in_mem_bmpFile = fopen(filename, "wb");
-	if (!in_mem_bmpFile) {
+	FILE* bmp_file = fopen(filename, "wb");
+	if (!bmp_file) {
 		int cc = errno;
 		printf("Could not open %s for writing\n", filename);
 		return cc;
@@ -89,7 +95,7 @@ int bmp_write()
 	fileHeader[ 5] = (unsigned char)(fileSize >> 24);
 	fileHeader[10] = (unsigned char)(FILE_HEADER_SIZE + INFO_HEADER_SIZE);
 
-	fwrite(fileHeader, FILE_HEADER_SIZE, 1, in_mem_bmpFile);
+	fwrite(fileHeader, FILE_HEADER_SIZE, 1, bmp_file);
 
 	if (verbose)
 		printf("Writing bitmap info header\n");
@@ -120,16 +126,16 @@ int bmp_write()
 	infoHeader[12] = (unsigned char)(1);
 	infoHeader[14] = (unsigned char)(BYTES_PER_PIXEL*8);
 
-	fwrite(infoHeader, INFO_HEADER_SIZE, 1, in_mem_bmpFile);
+	fwrite(infoHeader, INFO_HEADER_SIZE, 1, bmp_file);
 
 	int i;
 	for (i = 0; i < height; i++) {
-		fwrite(in_mem_bmp + (i*widthInBytes), BYTES_PER_PIXEL, width, in_mem_bmpFile);
-		fwrite(padding, 1, paddingSize, in_mem_bmpFile);
+		fwrite(in_mem_bmp + (i*widthInBytes), BYTES_PER_PIXEL, width, bmp_file);
+		fwrite(padding, 1, paddingSize, bmp_file);
 	}
 
 	printf("Wrote %d x %d bitmap file : %s\n", height, width, filename);
 
-	fclose(in_mem_bmpFile);
+	fclose(bmp_file);
 	return 0;
 }

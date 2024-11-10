@@ -27,11 +27,14 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <limits.h>
 #include "common.h"
 #include "bmp.h"
 
-static char   *bmp_name = "result.bmp";
+static char    bmp_name[PATH_MAX + 1] = "result.bmp";
 bool           verbose = false;
+bool           flip_x = false;
+bool           flip_y = false;
 static double  rate = 0.0; // can be used to adjust slant
 static int     skip = 0; // can be used to adjust slant
 
@@ -103,8 +106,16 @@ int main(int argc, char *argv[]) {
 			adaptive = false;
 			continue;
 		}
+		if (!strcmp("-mx", argv[i])) {
+			flip_x = true;
+			continue;
+		}
+		if (!strcmp("-my", argv[i])) {
+			flip_y = true;
+			continue;
+		}
 		if (!strcmp("-o", argv[i])) {
-			bmp_name = argv[++i];
+			strncpy(bmp_name, argv[++i], PATH_MAX);
 			continue;
 		}
 		if (!strcmp("-v", argv[i])) {
@@ -122,6 +133,8 @@ int main(int argc, char *argv[]) {
 		if (!strcmp("-h", argv[i])) {
 			printf("Usage:\n%s {opts} filename\n", argv[0]);
 			printf("  -a\t\tadaptive (default)\n");
+			printf("  -mx\t\tmirror X axis\n");
+			printf("  -my\t\tmirror Y axis\n");
 			printf("  -na\t\tnot adaptive\n");
 			printf("  -o filename\toutput bitmap filename (default result.bmp)\n");
 			printf("  -v\t\tverbose output\n");
@@ -156,7 +169,6 @@ int main(int argc, char *argv[]) {
 	fft.out = fftw_alloc_complex(2048);
 	if (fft.out == NULL) {
 		perror("Unable to allocate memory for FFT");
-		fftw_free(fft.in);
 		exit(EXIT_FAILURE);
 	}
 	memset(fft.in,  0, sizeof(double) * 2048);
@@ -168,6 +180,9 @@ int main(int argc, char *argv[]) {
 
 	free(lum_cache);
 	free(wav_samples);
+	free(in_mem_bmp);
+        fftw_destroy_plan(fft.plan1024);
+        fftw_destroy_plan(fft.plan2048);
 	fftw_free(fft.in);
 	fftw_free(fft.out);
 
