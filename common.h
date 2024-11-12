@@ -32,23 +32,19 @@ extern bool verbose;
 extern bool      adaptive;
 extern bool     *has_sync;
 extern uint8_t  *lum_cache;
-extern uint8_t   VISmap[];
+extern uint8_t   vis_map[];
 extern int       shift;
 
 
-typedef struct _FFTStuff FFTStuff;
-struct _FFTStuff {
-	double       *in;
-	fftw_complex *out;
-	fftw_plan     plan1024;
-	fftw_plan     plan2048;
-};
-extern FFTStuff fft;
+extern double       *fftw_in;
+extern fftw_complex *fftw_out;
+extern fftw_plan     fftw_plan1024;
+extern fftw_plan     fftw_plan2048;
 
 extern uint32_t current_sample;
 
 // SSTV modes
-enum {
+typedef enum {
 	UNKNOWN=0,
 	M1,    M2,   M3,    M4,
 	S1,    S2,   SDX,
@@ -56,38 +52,35 @@ enum {
 	PD50,  PD90, PD120, PD160, PD180, PD240, PD290,
 	P3,    P5,   P7,
 	W2120, W2180
-};
+} sstv_mode_t;
 
 // Color encodings
-enum {
+typedef enum {
 	GBR, RGB, YUV, BW
-};
+} color_enc_t;
 
 typedef struct mode_spec {
-	char   *Name;
-	char   *ShortName;
-	double  SyncTime;
-	double  PorchTime;
-	double  SeptrTime;
-	double  PixelTime;
-	double  LineTime;
-	uint16_t ImgWidth;
-	uint16_t NumLines;
-	uint8_t  LineHeight;
-	uint8_t  ColorEnc;
+	char   *mode_name;
+	char   *Shortmode_name;
+	double  sync_time;
+	double  porch_time;
+	double  sep_time;
+	double  pixel_time;
+	double  line_time;
+	uint16_t img_wide;
+	uint16_t img_high;
+	uint8_t  line_high;
+	color_enc_t color_enc;
 } _mode_spec;
 
 extern _mode_spec mode_spec[];
 
 double power(fftw_complex coeff);
 uint8_t clip(double a);
-double deg2rad(double Deg);
-double FindSync(uint8_t Mode, double Rate, int *Skip);
-void getFSK(char *dest);
-bool get_image(uint8_t Mode, double Rate, int Skip);
-uint8_t getVIS();
-int get_bin(double Freq, int FFTLen);
-int initPcmDevice();
-void readPcm(int numsamples);
+double deg2rad(double deg);
+void get_FSK(char *dest);
+bool get_image(sstv_mode_t mode, double rate, int skip);
+uint8_t get_VIS();
+int get_bin(double freq, int fft_len);
 
 #endif

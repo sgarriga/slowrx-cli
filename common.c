@@ -21,18 +21,21 @@
 #include <sys/types.h>
 #include "common.h"
 
-bool        adaptive        = true;
-bool       *has_sync         = NULL;
-uint8_t    *lum_cache       = NULL;
+bool     adaptive  = true;
+bool    *has_sync  = NULL;
+uint8_t *lum_cache = NULL;
 
 uint32_t current_sample = 0;
 int shift = 0;
 
-FFTStuff    fft;
+double       *fftw_in;
+fftw_complex *fftw_out;
+fftw_plan     fftw_plan1024;
+fftw_plan     fftw_plan2048;
 
 // Return the FFT bin index matching the given frequency
-int get_bin (double Freq, int FFTLen) {
-	return (Freq / wav_sample_rate * FFTLen);
+int get_bin (double freq, int fft_len) {
+	return (freq / wav_sample_rate * fft_len);
 }
 
 // Sinusoid power from complex DFT coefficients
@@ -48,8 +51,8 @@ uint8_t clip (double a) {
 }
 
 // Convert degrees -> radians
-double deg2rad (double Deg) {
-	return (Deg / 180) * M_PI;
+double deg2rad (double deg) {
+	return (deg / 180) * M_PI;
 }
 
 // Convert radians -> degrees

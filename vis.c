@@ -26,7 +26,7 @@
  *
  */
 
-uint8_t getVIS () {
+uint8_t get_VIS () {
 
 	int VIS = 0, Parity = 0, HedrPtr = 0;
 	int FFTLen = 2048, i=0, j=0, k=0, MaxBin = 0;
@@ -35,7 +35,7 @@ uint8_t getVIS () {
 	uint8_t Bit[8] = {0}, ParityBit = 0;
 
 	for (i = 0; i < FFTLen; i++)
-		fft.in[i] = 0;
+		fftw_in[i] = 0;
 
 	// Create 20ms Hann window
 	for (i = 0; i < 882; i++)
@@ -50,15 +50,15 @@ uint8_t getVIS () {
 
 		// Apply Hann window
 		for (i = 0; i < 882; i++)
-			fft.in[i] = wav_samples[current_sample + i] * Hann[i];
+			fftw_in[i] = wav_samples[current_sample + i] * Hann[i];
 
 		// FFT of last 20 ms
-		fftw_execute(fft.plan2048);
+		fftw_execute(fftw_plan2048);
 
 		// Find the bin with most power
 		MaxBin = 0;
 		for (i = 0; i <= get_bin(6000, FFTLen); i++) {
-			Power[i] = power(fft.out[i]);
+			Power[i] = power(fftw_out[i]);
 			if ( (i >= get_bin(500,FFTLen) && i < get_bin(3300,FFTLen)) &&
 					(MaxBin == 0 || Power[i] > Power[MaxBin]))
 				MaxBin = i;
@@ -121,14 +121,14 @@ uint8_t getVIS () {
 
 						Parity = Bit[0] ^ Bit[1] ^ Bit[2] ^ Bit[3] ^ Bit[4] ^ Bit[5] ^ Bit[6];
 
-						if (VISmap[VIS] == R12BW)
+						if (vis_map[VIS] == R12BW)
 							Parity = !Parity;
 
 						if (Parity != ParityBit) {
 							printf("  Parity fail\n");
 							got_VIS = false;
 						}
-						else if (VISmap[VIS] == UNKNOWN) {
+						else if (vis_map[VIS] == UNKNOWN) {
 							printf("  Unknown VIS\n");
 							got_VIS = false;
 						} 
@@ -146,8 +146,8 @@ uint8_t getVIS () {
 	// Skip the rest of the stop bit
 	current_sample += 20e-3 * wav_sample_rate;
 
-	if (VISmap[VIS] != UNKNOWN)
-		return VISmap[VIS];
+	if (vis_map[VIS] != UNKNOWN)
+		return vis_map[VIS];
 
 	printf("  No VIS found\n");
 	return 0;

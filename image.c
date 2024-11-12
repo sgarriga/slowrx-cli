@@ -27,7 +27,7 @@
  *  skip:      number of PCM samples to skip at the beginning (for sync phase adjustment)
  *  returns:   true when finished, false when aborted
  */
-bool get_image(uint8_t mode, double rate, int skip) {
+bool get_image(sstv_mode_t mode, double rate, int skip) {
 
 	int      MaxBin = 0;
 	int      VideoPlusNoiseBins=0, ReceiverBins=0, NoiseOnlyBins=0;
@@ -40,7 +40,7 @@ bool get_image(uint8_t mode, double rate, int skip) {
 	int        x = 0, y = 0, tx=0, k=0;
 	double     Hann[7][1024] = {{0}};
 	double     Freq = 0;
-	int        NextSNRtime = 0, NextSyncTime = 0;
+	int        NextSNRtime = 0, Nextsync_time = 0;
 	double     Praw, Psync;
 	double     Power[1024] = {0};
 	double     Pvideo_plus_noise=0, Pnoise_only=0, Pnoise=0, Psignal=0;
@@ -58,7 +58,7 @@ bool get_image(uint8_t mode, double rate, int skip) {
 	} _PixelGrid;
 
 	_PixelGrid *PixelGrid;
-	PixelGrid = calloc( mode_spec[mode].ImgWidth * mode_spec[mode].NumLines * 3, sizeof(_PixelGrid) );
+	PixelGrid = calloc( mode_spec[mode].img_wide * mode_spec[mode].img_high * 3, sizeof(_PixelGrid) );
 
 
 	// Initialize Hann windows of different lengths
@@ -73,20 +73,20 @@ bool get_image(uint8_t mode, double rate, int skip) {
 
 		case R36:
 		case R24:
-			ChanLen[0]   = mode_spec[mode].PixelTime * mode_spec[mode].ImgWidth * 2;
-			ChanLen[1]   = ChanLen[2] = mode_spec[mode].PixelTime * mode_spec[mode].ImgWidth;
-			ChanStart[0] = mode_spec[mode].SyncTime + mode_spec[mode].PorchTime;
-			ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].SeptrTime;
+			ChanLen[0]   = mode_spec[mode].pixel_time * mode_spec[mode].img_wide * 2;
+			ChanLen[1]   = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
+			ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
+			ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
 			ChanStart[2] = ChanStart[1];
 			break;
 
 		case S1:
 		case S2:
 		case SDX:
-			ChanLen[0]   = ChanLen[1] = ChanLen[2] = mode_spec[mode].PixelTime * mode_spec[mode].ImgWidth;
-			ChanStart[0] = mode_spec[mode].SeptrTime;
-			ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].SeptrTime;
-			ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].SyncTime + mode_spec[mode].PorchTime;
+			ChanLen[0]   = ChanLen[1] = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
+			ChanStart[0] = mode_spec[mode].sep_time;
+			ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
+			ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sync_time + mode_spec[mode].porch_time;
 			break;
 
 		case PD50:
@@ -96,18 +96,18 @@ bool get_image(uint8_t mode, double rate, int skip) {
 		case PD180:
 		case PD240:
 		case PD290:
-			ChanLen[0]   = ChanLen[1] = ChanLen[2] = ChanLen[3] = mode_spec[mode].PixelTime * mode_spec[mode].ImgWidth;
-			ChanStart[0] = mode_spec[mode].SyncTime + mode_spec[mode].PorchTime;
-			ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].SeptrTime;
-			ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].SeptrTime;
-			ChanStart[3] = ChanStart[2] + ChanLen[2] + mode_spec[mode].SeptrTime;
+			ChanLen[0]   = ChanLen[1] = ChanLen[2] = ChanLen[3] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
+			ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
+			ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
+			ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sep_time;
+			ChanStart[3] = ChanStart[2] + ChanLen[2] + mode_spec[mode].sep_time;
 			break;
 
 		default:
-			ChanLen[0]   = ChanLen[1] = ChanLen[2] = mode_spec[mode].PixelTime * mode_spec[mode].ImgWidth;
-			ChanStart[0] = mode_spec[mode].SyncTime + mode_spec[mode].PorchTime;
-			ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].SeptrTime;
-			ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].SeptrTime;
+			ChanLen[0]   = ChanLen[1] = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
+			ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
+			ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
+			ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sep_time;
 			break;
 	}
 
@@ -145,11 +145,11 @@ bool get_image(uint8_t mode, double rate, int skip) {
 
 	if (NumChans == 4){ //Woking on PD* mode
 			    //Each radio frame encodes two image lines
-		for (y = 0; y < mode_spec[mode].NumLines; y += 2){
+		for (y = 0; y < mode_spec[mode].img_high; y += 2){
 			for (Channel = 0; Channel < NumChans; Channel++){
-				for (x = 0; x < mode_spec[mode].ImgWidth; x++){
-					PixelGrid[PixelIdx].Time = (int)round(rate * ( y/2 * mode_spec[mode].LineTime + ChanStart[Channel] +
-								mode_spec[mode].PixelTime * 1.0 * (x + 0.5))) +
+				for (x = 0; x < mode_spec[mode].img_wide; x++){
+					PixelGrid[PixelIdx].Time = (int)round(rate * ( y/2 * mode_spec[mode].line_time + ChanStart[Channel] +
+								mode_spec[mode].pixel_time * 1.0 * (x + 0.5))) +
 						skip;
 					if (Channel == 0) {
 						PixelGrid[PixelIdx].X = x;
@@ -186,9 +186,9 @@ bool get_image(uint8_t mode, double rate, int skip) {
 		PixelGrid[PixelIdx - 1].Last = true;
 	}
 	else {
-		for (y = 0; y < mode_spec[mode].NumLines; y++) {
+		for (y = 0; y < mode_spec[mode].img_high; y++) {
 			for (Channel = 0; Channel < NumChans; Channel++) {
-				for (x = 0; x < mode_spec[mode].ImgWidth; x++) {
+				for (x = 0; x < mode_spec[mode].img_wide; x++) {
 
 					if (mode == R36 || mode == R24) {
 						if (Channel == 1) {
@@ -204,8 +204,8 @@ bool get_image(uint8_t mode, double rate, int skip) {
 						PixelGrid[PixelIdx].Channel = Channel;
 					}
 
-					PixelGrid[PixelIdx].Time = (int)round(rate * (y * mode_spec[mode].LineTime + ChanStart[Channel] +
-								(1.0 * (x - .5) / mode_spec[mode].ImgWidth * ChanLen[PixelGrid[PixelIdx].Channel]))) + skip;
+					PixelGrid[PixelIdx].Time = (int)round(rate * (y * mode_spec[mode].line_time + ChanStart[Channel] +
+								(1.0 * (x - .5) / mode_spec[mode].img_wide * ChanLen[PixelGrid[PixelIdx].Channel]))) + skip;
 					PixelGrid[PixelIdx].X = x;
 					PixelGrid[PixelIdx].Y = y;
 
@@ -232,16 +232,16 @@ bool get_image(uint8_t mode, double rate, int skip) {
 	  case PD180:
 	  case PD240:
 	  case PD290:
-	  if (CurLineTime >= ChanStart[2] + ChanLen[2]) Channel = 3; // ch 0 of even line
-	  else if (CurLineTime >= ChanStart[2])         Channel = 2;
-	  else if (CurLineTime >= ChanStart[1])         Channel = 1;
+	  if (Curline_time >= ChanStart[2] + ChanLen[2]) Channel = 3; // ch 0 of even line
+	  else if (Curline_time >= ChanStart[2])         Channel = 2;
+	  else if (Curline_time >= ChanStart[1])         Channel = 1;
 	  else                                          Channel = 0;
 	  break;*/
 
 	if(NumChans == 4) //In PD* modes, each radio frame encodes two image lines
-		Length = mode_spec[mode].LineTime * mode_spec[mode].NumLines/2 * wav_sample_rate;
+		Length = mode_spec[mode].line_time * mode_spec[mode].img_high/2 * wav_sample_rate;
 	else
-		Length = mode_spec[mode].LineTime * mode_spec[mode].NumLines * wav_sample_rate;
+		Length = mode_spec[mode].line_time * mode_spec[mode].img_high * wav_sample_rate;
 	SyncTargetBin = get_bin(1200 + shift, FFTLen);
 	SyncSampleNum = 0;
 
@@ -253,23 +253,23 @@ bool get_image(uint8_t mode, double rate, int skip) {
 
 		/*** Store the sync band for later adjustments ***/
 
-		if (SampleNum == NextSyncTime) {
+		if (SampleNum == Nextsync_time) {
 
 			Praw = Psync = 0;
 
-			memset(fft.in, 0, sizeof(double)*FFTLen);
+			memset(fftw_in, 0, sizeof(double)*FFTLen);
 
 			// Hann window
 			for (i = 0; i < 64; i++)
-				fft.in[i] = wav_samples[current_sample-32+i] * Hann[1][i];
+				fftw_in[i] = wav_samples[current_sample-32+i] * Hann[1][i];
 
-			fftw_execute(fft.plan1024);
+			fftw_execute(fftw_plan1024);
 
 			for (i=get_bin(1500+shift,FFTLen); i<=get_bin(2300+shift, FFTLen); i++)
-				Praw += power(fft.out[i]);
+				Praw += power(fftw_out[i]);
 
 			for (i=SyncTargetBin-1; i<=SyncTargetBin+1; i++)
-				Psync += power(fft.out[i]) * (1- .5*abs(SyncTargetBin-i));
+				Psync += power(fftw_out[i]) * (1- .5*abs(SyncTargetBin-i));
 
 			Praw  /= (get_bin(2300+shift, FFTLen) - get_bin(1500+shift, FFTLen));
 			Psync /= 2.0;
@@ -278,7 +278,7 @@ bool get_image(uint8_t mode, double rate, int skip) {
 			// sync band than in the video band, we have a sync signal here
 			has_sync[SyncSampleNum] = (Psync > 2*Praw);
 
-			NextSyncTime += 13;
+			Nextsync_time += 13;
 			SyncSampleNum ++;
 
 		}
@@ -289,28 +289,28 @@ bool get_image(uint8_t mode, double rate, int skip) {
 
 		if (SampleNum == NextSNRtime) {
 
-			memset(fft.in, 0, sizeof(double)*FFTLen);
+			memset(fftw_in, 0, sizeof(double)*FFTLen);
 
 			// Apply Hann window
 			for (i = 0; i < FFTLen; i++) 
-				fft.in[i] = wav_samples[current_sample + i - FFTLen/2] * Hann[6][i]; // ??
+				fftw_in[i] = wav_samples[current_sample + i - FFTLen/2] * Hann[6][i]; // ??
 
-			fftw_execute(fft.plan1024);
+			fftw_execute(fftw_plan1024);
 
 			// Calculate video-plus-noise power (1500-2300 Hz)
 
 			Pvideo_plus_noise = 0;
 			for (n = get_bin(1500+shift, FFTLen); n <= get_bin(2300+shift, FFTLen); n++)
-				Pvideo_plus_noise += power(fft.out[n]);
+				Pvideo_plus_noise += power(fftw_out[n]);
 
 			// Calculate noise-only power (400-800 Hz + 2700-3400 Hz)
 
 			Pnoise_only = 0;
 			for (n = get_bin(400+shift,  FFTLen); n <= get_bin(800+shift, FFTLen);  n++)
-				Pnoise_only += power(fft.out[n]);
+				Pnoise_only += power(fftw_out[n]);
 
 			for (n = get_bin(2700+shift, FFTLen); n <= get_bin(3400+shift, FFTLen); n++)
-				Pnoise_only += power(fft.out[n]);
+				Pnoise_only += power(fftw_out[n]);
 
 			// Bandwidths
 			VideoPlusNoiseBins = get_bin(2300, FFTLen) - get_bin(1500, FFTLen) + 1;
@@ -359,7 +359,7 @@ bool get_image(uint8_t mode, double rate, int skip) {
 			if (mode == SDX && WinIdx < 6)
 				WinIdx++;
 
-			memset(fft.in, 0, sizeof(double)*FFTLen);
+			memset(fftw_in, 0, sizeof(double)*FFTLen);
 			memset(Power,  0, sizeof(double)*1024);
 
 			// Apply window function
@@ -369,16 +369,16 @@ bool get_image(uint8_t mode, double rate, int skip) {
 				break;
 
 			for (i = 0; i < WinLength; i++)
-				fft.in[i] = wav_samples[current_sample + i - WinLength/2] * Hann[WinIdx][i]; // ??
+				fftw_in[i] = wav_samples[current_sample + i - WinLength/2] * Hann[WinIdx][i]; // ??
 
-			fftw_execute(fft.plan1024);
+			fftw_execute(fftw_plan1024);
 
 			MaxBin = 0;
 
 			// Find the bin with most power
 			for (n = get_bin(1500 + shift, FFTLen) - 1; n <= get_bin(2300 + shift, FFTLen) + 1; n++) {
 
-				Power[n] = power(fft.out[n]);
+				Power[n] = power(fftw_out[n]);
 				if (MaxBin == 0 || Power[n] > Power[MaxBin])
 					MaxBin = n;
 
@@ -418,14 +418,14 @@ bool get_image(uint8_t mode, double rate, int skip) {
 				if (Channel > 0 && (mode == R36 || mode == R24))
 					Image[x][y+1][Channel] = lum_cache[SampleNum];
 
-                                //printf("X = %d, x = %d, Last = %d\n",  mode_spec[mode].ImgWidth, x, PixelGrid[PixelIdx].Last);
+                                //printf("X = %d, x = %d, Last = %d\n",  mode_spec[mode].img_wide, x, PixelGrid[PixelIdx].Last);
 
-				if (x == mode_spec[mode].ImgWidth - 1 || PixelGrid[PixelIdx].Last) {
+				if (x == mode_spec[mode].img_wide - 1 || PixelGrid[PixelIdx].Last) {
 					if (verbose)
 						printf("Transfer line to BMP!\n");
 
-					for (tx = 0; tx < mode_spec[mode].ImgWidth; tx++) {
-						switch(mode_spec[mode].ColorEnc) {
+					for (tx = 0; tx < mode_spec[mode].img_wide; tx++) {
+						switch(mode_spec[mode].color_enc) {
 
 							case RGB:
 								bmp_plot(tx, y, RED, Image[tx][y][0]);

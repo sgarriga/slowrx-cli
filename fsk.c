@@ -29,7 +29,7 @@
  *
  */
 
-void getFSK (char *dest) {
+void get_FSK (char *dest) {
 
 	int FFTLen = 2048, i=0, LoBin, HiBin, MidBin, TestNum=0, TestPtr=0;
 	uint8_t Bit = 0, AsciiByte = 0, BytePtr = 0, TestBits[24] = {0}, BitPtr=0;
@@ -49,7 +49,7 @@ void getFSK (char *dest) {
 		0x07, 0x27, 0x17, 0x37,   0x0f, 0x2f, 0x1f, 0x3f };
 
 	for (i = 0; i < FFTLen; i++)
-		fft.in[i] = 0;
+		fftw_in[i] = 0;
 
 	// Create 22ms Hann window
 	for (i = 0; i < 970; i++)
@@ -62,12 +62,12 @@ void getFSK (char *dest) {
 
 		// Apply Hann window
 		for (i = 0; i < 970; i++)
-			fft.in[i] = wav_samples[current_sample+i] * Hann[i];
+			fftw_in[i] = wav_samples[current_sample+i] * Hann[i];
 
 		current_sample += (InSync ? 970 : 485);
 
 		// FFT of last 22 ms
-		fftw_execute(fft.plan2048);
+		fftw_execute(fftw_plan2048);
 
 		LoBin  = get_bin(1900+shift, FFTLen)-1;
 		MidBin = get_bin(2000+shift, FFTLen);
@@ -78,9 +78,9 @@ void getFSK (char *dest) {
 
 		for (i = LoBin; i <= HiBin; i++) {
 			if (i < MidBin)
-				LoPow += power(fft.out[i]);
+				LoPow += power(fftw_out[i]);
 			else 
-				HiPow += power(fft.out[i]);
+				HiPow += power(fftw_out[i]);
 		}
 
 		Bit = (LoPow>HiPow);
