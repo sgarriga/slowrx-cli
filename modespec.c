@@ -22,7 +22,6 @@
  * Mode specifications
  *
  * mode_name          Long, human-readable name for the mode
- * Shortmode_name     Abbreviation for the mode, used in filenames
  * sync_time      Duration of synchronization pulse in seconds
  * porch_time     Duration of sync porch pulse in seconds
  * sep_time     Duration of channel separator pulse in seconds
@@ -49,7 +48,6 @@ _mode_spec mode_spec[] = {
 
 	[M1] = {  // N7CXI, 2000
 		.mode_name         = "Martin M1",
-		.Shortmode_name    = "M1",
 		.sync_time     = 4.862e-3,
 		.porch_time    = 0.572e-3,
 		.sep_time    = 0.572e-3,
@@ -62,7 +60,6 @@ _mode_spec mode_spec[] = {
 
 	[M2] = {  // N7CXI, 2000
 		.mode_name         = "Martin M2",
-		.Shortmode_name    = "M2",
 		.sync_time     = 4.862e-3,
 		.porch_time    = 0.572e-3,
 		.sep_time    = 0.572e-3,
@@ -75,7 +72,6 @@ _mode_spec mode_spec[] = {
 
 	[M3] = {   // KB4YZ, 1999
 		.mode_name         = "Martin M3",
-		.Shortmode_name    = "M3",
 		.sync_time     = 4.862e-3,
 		.porch_time    = 0.572e-3,
 		.sep_time    = 0.572e-3,
@@ -88,7 +84,6 @@ _mode_spec mode_spec[] = {
 
 	[M4] = {   // KB4YZ, 1999
 		.mode_name         = "Martin M4",
-		.Shortmode_name    = "M4",
 		.sync_time     = 4.862e-3,
 		.porch_time    = 0.572e-3,
 		.sep_time    = 0.572e-3,
@@ -101,7 +96,6 @@ _mode_spec mode_spec[] = {
 
 	[S1] = {  // N7CXI, 2000
 		.mode_name         = "Scottie S1",
-		.Shortmode_name    = "S1",
 		.sync_time     = 9e-3,
 		.porch_time    = 1.5e-3,
 		.sep_time    = 1.5e-3,
@@ -114,7 +108,6 @@ _mode_spec mode_spec[] = {
 
 	[S2] = {  // N7CXI, 2000
 		.mode_name         = "Scottie S2",
-		.Shortmode_name    = "S2",
 		.sync_time     = 9e-3,
 		.porch_time    = 1.5e-3,
 		.sep_time    = 1.5e-3,
@@ -127,7 +120,6 @@ _mode_spec mode_spec[] = {
 
 	[SDX] = {  // N7CXI, 2000
 		.mode_name         = "Scottie DX",
-		.Shortmode_name    = "SDX",
 		.sync_time     = 9e-3,
 		.porch_time    = 1.5e-3,
 		.sep_time    = 1.5e-3,
@@ -140,7 +132,6 @@ _mode_spec mode_spec[] = {
 
 	[R72] = {  // N7CXI, 2000
 		.mode_name         = "Robot 72",
-		.Shortmode_name    = "R72",
 		.sync_time     = 9e-3,
 		.porch_time    = 3e-3,
 		.sep_time    = 4.7e-3,
@@ -153,7 +144,6 @@ _mode_spec mode_spec[] = {
 
 	[R36] = {  // N7CXI, 2000
 		.mode_name         = "Robot 36",
-		.Shortmode_name    = "R36",
 		.sync_time     = 9e-3,
 		.porch_time    = 3e-3,
 		.sep_time    = 6e-3,
@@ -166,7 +156,6 @@ _mode_spec mode_spec[] = {
 
 	[R24] = {  // N7CXI, 2000
 		.mode_name         = "Robot 24",
-		.Shortmode_name    = "R24",
 		.sync_time     = 9e-3,
 		.porch_time    = 3e-3,
 		.sep_time    = 6e-3,
@@ -179,7 +168,6 @@ _mode_spec mode_spec[] = {
 
 	[R24BW] = {  // N7CXI, 2000
 		.mode_name         = "Robot 24 B/W",
-		.Shortmode_name    = "R24BW",
 		.sync_time     = 7e-3,
 		.porch_time    = 0e-3,
 		.sep_time    = 0e-3,
@@ -192,7 +180,6 @@ _mode_spec mode_spec[] = {
 
 	[R12BW] = {  // N7CXI, 2000
 		.mode_name         = "Robot 12 B/W",
-		.Shortmode_name    = "R12BW",
 		.sync_time     = 7e-3,
 		.porch_time    = 0e-3,
 		.sep_time    = 0e-3,
@@ -205,7 +192,6 @@ _mode_spec mode_spec[] = {
 
 	[R8BW] = {  // N7CXI, 2000
 		.mode_name         = "Robot 8 B/W",
-		.Shortmode_name    = "R8BW",
 		.sync_time     = 7e-3,
 		.porch_time    = 0e-3,
 		.sep_time    = 0e-3,
@@ -218,7 +204,6 @@ _mode_spec mode_spec[] = {
 
 	[W2120] = { // KB4YZ, 1999
 		.mode_name         = "Wraase SC-2 120",
-		.Shortmode_name    = "W2120",
 		.sync_time     = 5.5225e-3,
 		.porch_time    = 0.5e-3,
 		.sep_time    = 0e-3,
@@ -231,7 +216,6 @@ _mode_spec mode_spec[] = {
 
 	[W2180] = {  // N7CXI, 2000
 		.mode_name         = "Wraase SC-2 180",
-		.Shortmode_name    = "W2180",
 		.sync_time     = 5.5225e-3,
 		.porch_time    = 0.5e-3,
 		.sep_time    = 0e-3,
@@ -244,7 +228,6 @@ _mode_spec mode_spec[] = {
 
 	[PD50] = {  // N7CXI, 2000
 		.mode_name         = "PD-50",
-		.Shortmode_name    = "PD50",
 		.sync_time     = 20e-3,
 		.porch_time    = 2.08e-3,
 		.sep_time    = 0e-3,
@@ -257,7 +240,6 @@ _mode_spec mode_spec[] = {
 
 	[PD90] = {  // N7CXI, 2000
 		.mode_name         = "PD-90",
-		.Shortmode_name    = "PD90",
 		.sync_time     = 20e-3,
 		.porch_time    = 2.08e-3,
 		.sep_time    = 0e-3,
@@ -270,7 +252,6 @@ _mode_spec mode_spec[] = {
 
 	[PD120] = {  // N7CXI, 2000
 		.mode_name         = "PD-120",
-		.Shortmode_name    = "PD120",
 		.sync_time     = 20e-3,
 		.porch_time    = 2.08e-3,
 		.sep_time    = 0e-3,
@@ -283,7 +264,6 @@ _mode_spec mode_spec[] = {
 
 	[PD160] = {  // N7CXI, 2000
 		.mode_name         = "PD-160",
-		.Shortmode_name    = "PD160",
 		.sync_time     = 20e-3,
 		.porch_time    = 2.08e-3,
 		.sep_time    = 0e-3,
@@ -296,7 +276,6 @@ _mode_spec mode_spec[] = {
 
 	[PD180] = {  // N7CXI, 2000
 		.mode_name         = "PD-180",
-		.Shortmode_name    = "PD180",
 		.sync_time     = 20e-3,
 		.porch_time    = 2.08e-3,
 		.sep_time    = 0e-3,
@@ -309,7 +288,6 @@ _mode_spec mode_spec[] = {
 
 	[PD240] = {  // N7CXI, 2000
 		.mode_name         = "PD-240",
-		.Shortmode_name    = "PD240",
 		.sync_time     = 20e-3,
 		.porch_time    = 2.08e-3,
 		.sep_time    = 0e-3,
@@ -322,7 +300,6 @@ _mode_spec mode_spec[] = {
 
 	[PD290] = {  // N7CXI, 2000
 		.mode_name         = "PD-290",
-		.Shortmode_name    = "PD290",
 		.sync_time     = 20e-3,
 		.porch_time    = 2.08e-3,
 		.sep_time    = 0e-3,
@@ -335,7 +312,6 @@ _mode_spec mode_spec[] = {
 
 	[P3] = {  // N7CXI, 2000
 		.mode_name         = "Pasokon P3",
-		.Shortmode_name    = "P3",
 		.sync_time     = 5.208e-3,
 		.porch_time    = 1.042e-3,
 		.sep_time    = 1.042e-3,
@@ -348,7 +324,6 @@ _mode_spec mode_spec[] = {
 
 	[P5] = {  // N7CXI, 2000
 		.mode_name         = "Pasokon P5",
-		.Shortmode_name    = "P5",
 		.sync_time     = 7.813e-3,
 		.porch_time    = 1.563e-3,
 		.sep_time    = 1.563e-3,
@@ -361,7 +336,6 @@ _mode_spec mode_spec[] = {
 
 	[P7] = {  // N7CXI, 2000
 		.mode_name         = "Pasokon P7",
-		.Shortmode_name    = "P7",
 		.sync_time     = 10.417e-3,
 		.porch_time    = 2.083e-3,
 		.sep_time    = 2.083e-3,

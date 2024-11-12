@@ -61,7 +61,6 @@ typedef enum {
 
 typedef struct mode_spec {
 	char   *mode_name;
-	char   *Shortmode_name;
 	double  sync_time;
 	double  porch_time;
 	double  sep_time;
