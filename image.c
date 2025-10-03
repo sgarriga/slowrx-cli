@@ -71,6 +71,14 @@ bool get_image(sstv_mode_t mode, double rate, int skip) {
 	// Starting times of video channels on every line, counted from beginning of line
 	switch (mode) {
 
+		case R72:
+			ChanLen[0]   = mode_spec[mode].pixel_time * mode_spec[mode].img_wide * 2;
+			ChanLen[1]   = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
+			ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
+			ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
+			ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sep_time;
+      		break;
+
 		case R36:
 		case R24:
 			ChanLen[0]   = mode_spec[mode].pixel_time * mode_spec[mode].img_wide * 2;

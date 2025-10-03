@@ -105,7 +105,7 @@ int load_wav(char *filename) {
 	while (strncmp(hdr.chunk.sub_chunk_ID, "data", 4)) { // fact, ????
                 printf("Shipping \"%4.4s\" chunk\n", hdr.chunk.sub_chunk_ID);
 		fseek(f, hdr.chunk.sub_chunk_size, SEEK_CUR);
-		got = fread(&hdr.chunk, sizeof(ChunkHdr), 1, f);
+		got += fread(&hdr.chunk, sizeof(ChunkHdr), 1, f);
 	}
 
 	// Read wave data
@@ -118,14 +118,14 @@ int load_wav(char *filename) {
 			case 2:
 				// 16-bit mono
 				for (size_t i = 0; i < wav_sample_count && !feof(f); i++) {
-					fread(sample16, sizeof(int16_t), 1, f);
+					got += fread(sample16, sizeof(int16_t), 1, f);
 					wav_samples[i] =  (double)sample16[0] / (double)0x7FFF; 
 				}
 				break;
 			case 4:
 				// 16-bit stereo
 				for (size_t i = 0; i < (wav_sample_count * 2) && !feof(f); i++) {
-					fread(sample16, sizeof(int16_t), 2, f);
+					got += fread(sample16, sizeof(int16_t), 2, f);
 					switch (channel) {
 						case 'L':
 							wav_samples[i] = (double)sample16[0] / (double)0x7FFF;
@@ -150,14 +150,14 @@ int load_wav(char *filename) {
 			case 1:
 				// 8-bit mono
 				for (size_t i = 0; i < wav_sample_count && !feof(f); i++) {
-					fread(sample8, sizeof(int8_t), 1, f);
+					got += fread(sample8, sizeof(int8_t), 1, f);
 					wav_samples[i] =  (double)sample8[0] / (double)0x7F; 
 				}
 				break;
 			case 2:
 				// 8-bit stereo
 				for (size_t i = 0; i < (wav_sample_count * 2) && !feof(f); i++) {
-					fread(sample8, sizeof(int8_t), 2, f);
+					got += fread(sample8, sizeof(int8_t), 2, f);
 					switch (channel) {
 						case 'L':
 							wav_samples[i] = (double)sample8[0] / (double)0x7F;
