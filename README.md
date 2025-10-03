@@ -2,14 +2,15 @@ slowrx
 ======
 Slowrx is an excellent SSTV decoder for Linux created by Oona Räisänen (OH2EIQ [at] sral.fi).<br>
 http://windytan.github.io/slowrx/<br>
-Unfortunately it uses a GTK GUI and reads audio from a soundcard and I wanted to convert prior WAV recordings on a headless Raspberry Pi.<br>
+Unfortunately it uses a GTK GUI and reads audio from a soundcarwhile I wanted to convert prior WAV recordings on a headless Raspberry Pi.<br>
 
 slowrx-cli is a hack that runs on the command line (no GUI), reads a 44100 samples per second WAV file, and writes a BMP. I don't think I've broken anything but, so far, I have not tested all the SSTV modes Oona coded for.
 
 Requirements
 ------------
-* Linux (I'm using a Raspberry Pi)
+* Linux (Raspbian and Ubuntu work for me, your mileage may vary)
 * FFTW 3 (`libfftw3-dev`)
+* gcc
 
 Compiling
 ---------
@@ -22,6 +23,8 @@ Running
 `  -na          not adaptive`<br>
 `  -o filename  output bitmap filename (default result.bmp)`<br>
 `  -v           verbose output`<br>
-`  -r float     override WAV sample rate, Hz`<br>
+`  -r float     override WAV sample rate, Hz (default 44100)`<br>
 `  -s int       sync. adjustment (default 0.0)`<br>
 `  -h           show this information`<br>
+
+Test recordings (Robot, Martin & Scottie) were obtained from http://www.sigidwiki.com in MP3 format and converted to WAV with ffmpeg.

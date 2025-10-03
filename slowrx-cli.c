@@ -137,10 +137,10 @@ int main(int argc, char *argv[]) {
 			printf("  -na\t\tnot adaptive\n");
 			printf("  -o filename\toutput bitmap filename (default result.bmp)\n");
 			printf("  -v\t\tverbose output\n");
-			printf("  -r float\toverride WAV sample rate, Hz\n");
+			printf("  -r float\toverride WAV sample rate, Hz (default 44100)\n");
 			printf("  -s int\tsync. adjustment (default 0.0)\n");
 			printf("  -h\t\tshow this information\n");
-                        exit(0);
+            exit(0);
 		}
 		wav = argv[i];
 	};
