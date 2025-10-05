@@ -19,7 +19,7 @@
 #include <string.h>
 #include "common.h"
 
-/* 
+/*
  *
  * Decode FSK ID
  *
@@ -29,103 +29,109 @@
  *
  */
 
-void get_FSK (char *dest) {
+void get_FSK(char *dest)
+{
 
-	int FFTLen = 2048, i=0, LoBin, HiBin, MidBin, TestNum=0, TestPtr=0;
-	uint8_t Bit = 0, AsciiByte = 0, BytePtr = 0, TestBits[24] = {0}, BitPtr=0;
-	double HiPow,LoPow,Hann[970];
+	int FFTLen = 2048, i = 0, LoBin, HiBin, MidBin, TestNum = 0, TestPtr = 0;
+	uint8_t Bit = 0, AsciiByte = 0, BytePtr = 0, TestBits[24] = {0}, BitPtr = 0;
+	double HiPow, LoPow, Hann[970];
 	bool InSync = false;
 	size_t started_at = current_sample;
 
 	// Bit-reversion lookup table
 	static const uint8_t BitRev[] = {
-		0x00, 0x20, 0x10, 0x30,   0x08, 0x28, 0x18, 0x38,
-		0x04, 0x24, 0x14, 0x34,   0x0c, 0x2c, 0x1c, 0x3c,
-		0x02, 0x22, 0x12, 0x32,   0x0a, 0x2a, 0x1a, 0x3a,
-		0x06, 0x26, 0x16, 0x36,   0x0e, 0x2e, 0x1e, 0x3e,
-		0x01, 0x21, 0x11, 0x31,   0x09, 0x29, 0x19, 0x39,
-		0x05, 0x25, 0x15, 0x35,   0x0d, 0x2d, 0x1d, 0x3d,
-		0x03, 0x23, 0x13, 0x33,   0x0b, 0x2b, 0x1b, 0x3b,
-		0x07, 0x27, 0x17, 0x37,   0x0f, 0x2f, 0x1f, 0x3f };
+		0x00, 0x20, 0x10, 0x30, 0x08, 0x28, 0x18, 0x38,
+		0x04, 0x24, 0x14, 0x34, 0x0c, 0x2c, 0x1c, 0x3c,
+		0x02, 0x22, 0x12, 0x32, 0x0a, 0x2a, 0x1a, 0x3a,
+		0x06, 0x26, 0x16, 0x36, 0x0e, 0x2e, 0x1e, 0x3e,
+		0x01, 0x21, 0x11, 0x31, 0x09, 0x29, 0x19, 0x39,
+		0x05, 0x25, 0x15, 0x35, 0x0d, 0x2d, 0x1d, 0x3d,
+		0x03, 0x23, 0x13, 0x33, 0x0b, 0x2b, 0x1b, 0x3b,
+		0x07, 0x27, 0x17, 0x37, 0x0f, 0x2f, 0x1f, 0x3f};
 
 	for (i = 0; i < FFTLen; i++)
 		fftw_in[i] = 0;
 
 	// Create 22ms Hann window
 	for (i = 0; i < 970; i++)
-		Hann[i] = 0.5 * (1 - cos( 2 * M_PI * i / 969.0 ) );
+		Hann[i] = 0.5 * (1 - cos(2 * M_PI * i / 969.0));
 
-	while ( current_sample < wav_sample_count ) {
+	while (current_sample < wav_sample_count)
+	{
 
-		if (verbose)
+		if (verbose > 1)
 			printf("FSK scan starting %s\n", wav_elapsed(current_sample));
 
 		// Apply Hann window
 		for (i = 0; i < 970; i++)
-			fftw_in[i] = wav_samples[current_sample+i] * Hann[i];
+			fftw_in[i] = wav_samples[current_sample + i] * Hann[i];
 
 		current_sample += (InSync ? 970 : 485);
 
 		// FFT of last 22 ms
 		fftw_execute(fftw_plan2048);
 
-		LoBin  = get_bin(1900+shift, FFTLen)-1;
-		MidBin = get_bin(2000+shift, FFTLen);
-		HiBin  = get_bin(2100+shift, FFTLen)+1;
+		LoBin = get_bin(1900 + shift, FFTLen) - 1;
+		MidBin = get_bin(2000 + shift, FFTLen);
+		HiBin = get_bin(2100 + shift, FFTLen) + 1;
 
 		LoPow = 0;
 		HiPow = 0;
 
-		for (i = LoBin; i <= HiBin; i++) {
+		for (i = LoBin; i <= HiBin; i++)
+		{
 			if (i < MidBin)
 				LoPow += power(fftw_out[i]);
-			else 
+			else
 				HiPow += power(fftw_out[i]);
 		}
 
-		Bit = (LoPow>HiPow);
+		Bit = (LoPow > HiPow);
 
-		if (!InSync) {
+		if (!InSync)
+		{
 
 			// Wait for 20 2A
 
 			TestBits[TestPtr % 24] = Bit;
 
 			TestNum = 0;
-			for (i=0; i<12; i++)
-				TestNum |= TestBits[(TestPtr - (23-i*2)) % 24] << (11-i);
+			for (i = 0; i < 12; i++)
+				TestNum |= TestBits[(TestPtr - (23 - i * 2)) % 24] << (11 - i);
 
-			if (BitRev[(TestNum >>  6) & 0x3f] == 0x20 && BitRev[TestNum & 0x3f] == 0x2a) {
-				InSync    = true;
+			if (BitRev[(TestNum >> 6) & 0x3f] == 0x20 && BitRev[TestNum & 0x3f] == 0x2a)
+			{
+				InSync = true;
 				AsciiByte = 0;
-				BitPtr    = 0;
-				BytePtr   = 0;
+				BitPtr = 0;
+				BytePtr = 0;
 			}
 
 			if (++TestPtr > 200)
 				break;
-
-		} else {
+		}
+		else
+		{
 
 			AsciiByte |= Bit << BitPtr;
 
-			if (++BitPtr == 6) {
+			if (++BitPtr == 6)
+			{
 				if (AsciiByte < 0x0d || BytePtr > 9)
 					break;
 				dest[BytePtr] = AsciiByte + 0x20;
-				BitPtr        = 0;
-				AsciiByte     = 0;
-				BytePtr ++;
+				BitPtr = 0;
+				AsciiByte = 0;
+				BytePtr++;
 			}
 		}
-
 	}
 
 	dest[BytePtr] = '\0';
 
 	// if we didn't see an FSH Id then rewind to where we started looking
-	if (!*dest) {
+	if (!*dest)
+	{
 		current_sample = started_at;
 	}
-
 }

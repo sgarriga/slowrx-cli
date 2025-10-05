@@ -21,42 +21,48 @@
 #include <sys/types.h>
 #include "common.h"
 
-bool     adaptive  = true;
-bool    *has_sync  = NULL;
+bool adaptive = true;
+bool *has_sync = NULL;
 uint8_t *lum_cache = NULL;
 
 uint32_t current_sample = 0;
 int shift = 0;
 
-double       *fftw_in;
+double *fftw_in;
 fftw_complex *fftw_out;
-fftw_plan     fftw_plan1024;
-fftw_plan     fftw_plan2048;
+fftw_plan fftw_plan1024;
+fftw_plan fftw_plan2048;
 
 // Return the FFT bin index matching the given frequency
-int get_bin (double freq, int fft_len) {
-	return (freq / wav_sample_rate * fft_len);
+int get_bin(double freq, int fft_len)
+{
+  return (freq / wav_sample_rate * fft_len);
 }
 
 // Sinusoid power from complex DFT coefficients
-double power (fftw_complex coeff) {
-	return pow(coeff[0],2) + pow(coeff[1],2);
+double power(fftw_complex coeff)
+{
+  return pow(coeff[0], 2) + pow(coeff[1], 2);
 }
 
 // Clip to [0..255]
-uint8_t clip (double a) {
-	if      (a < 0)   return 0;
-	else if (a > 255) return 255;
-	return  (uint8_t)round(a);
+uint8_t clip(double a)
+{
+  if (a < 0)
+    return 0;
+  else if (a > 255)
+    return 255;
+  return (uint8_t)round(a);
 }
 
 // Convert degrees -> radians
-double deg2rad (double deg) {
-	return (deg / 180) * M_PI;
+double deg2rad(double deg)
+{
+  return (deg / 180) * M_PI;
 }
 
 // Convert radians -> degrees
-double rad2deg (double rad) {
-	return (180 / M_PI) * rad;
+double rad2deg(double rad)
+{
+  return (180 / M_PI) * rad;
 }
-

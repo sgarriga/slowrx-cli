@@ -22,54 +22,74 @@
 #include <stdbool.h>
 #include "wav.h"
 
-#define MINSLANT 30
-#define MAXSLANT 150
-#define BUFLEN   4096
-#define SYNCPIXLEN 1.5e-3
+extern uint8_t verbose;
 
-extern bool verbose;
+extern bool adaptive;
+// extern bool     *has_sync;
+extern uint8_t *lum_cache;
+extern uint8_t vis_map[];
+extern int shift;
 
-extern bool      adaptive;
-extern bool     *has_sync;
-extern uint8_t  *lum_cache;
-extern uint8_t   vis_map[];
-extern int       shift;
-
-
-extern double       *fftw_in;
+extern double *fftw_in;
 extern fftw_complex *fftw_out;
-extern fftw_plan     fftw_plan1024;
-extern fftw_plan     fftw_plan2048;
+extern fftw_plan fftw_plan1024;
+extern fftw_plan fftw_plan2048;
 
 extern uint32_t current_sample;
 
 // SSTV modes
-typedef enum {
-	UNKNOWN=0,
-	M1,    M2,   M3,    M4,
-	S1,    S2,   SDX,
-	R72,   R36,  R24,   R24BW, R12BW, R8BW,
-	PD50,  PD90, PD120, PD160, PD180, PD240, PD290,
-	P3,    P5,   P7,
-	W2120, W2180
+typedef enum
+{
+	UNKNOWN = 0,
+	M1,
+	M2,
+	M3,
+	M4,
+	S1,
+	S2,
+	SDX,
+	R72,
+	R36,
+	R24,
+	R24BW,
+	R12BW,
+	R8BW,
+	PD50,
+	PD90,
+	PD120,
+	PD160,
+	PD180,
+	PD240,
+	PD290,
+	P3,
+	P5,
+	P7,
+	W2120,
+	W2180
 } sstv_mode_t;
 
 // Color encodings
-typedef enum {
-	GBR, RGB, YUV, BW
+typedef enum
+{
+	GBR,
+	RGB,
+	YUV,
+	BW
 } color_enc_t;
 
-typedef struct mode_spec {
-	char   *mode_name;
-	double  sync_time;
-	double  porch_time;
-	double  sep_time;
-	double  pixel_time;
-	double  line_time;
+typedef struct mode_spec
+{
+	char *mode_name;
+	double sync_time;
+	double porch_time;
+	double sep_time;
+	double pixel_time;
+	double line_time;
 	uint16_t img_wide;
 	uint16_t img_high;
-	uint8_t  line_high;
+	uint8_t row_count;
 	color_enc_t color_enc;
+	uint8_t channels;
 } _mode_spec;
 
 extern _mode_spec mode_spec[];
