@@ -18,16 +18,15 @@
 #define BMP_H
 #include <stdint.h>
 
-#ifdef BMP_C
-uint8_t *in_mem_bmp = NULL; // will be malloc'd!
-#else
-extern uint8_t *in_mem_bmp; // will be malloc'd!
-#endif
+typedef enum
+{
+  RED,
+  GREEN,
+  BLUE
+} BMP_RGB;
 
-typedef enum { RED, GREEN, BLUE } BMP_RGB;
-
-// create the in-memory bitmap 
-int bmp_init(char *fname, uint16_t height_in, uint16_t width_in);
+// create the in-memory bitmap
+int bmp_init(char *fname, uint16_t height_in, uint16_t width_in, uint8_t row_count_in); // row_count_in is 1 or 2
 
 // write out the in-memory bitbap
 int bmp_write();
