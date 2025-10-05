@@ -18,7 +18,7 @@
 #include <math.h>
 #include "common.h"
 
-/* 
+/*
  *
  * Detect VIS & frequency shift
  *
@@ -26,10 +26,11 @@
  *
  */
 
-uint8_t get_VIS () {
+uint8_t get_VIS()
+{
 
 	int VIS = 0, Parity = 0, HedrPtr = 0;
-	int FFTLen = 2048, i=0, j=0, k=0, MaxBin = 0;
+	int FFTLen = 2048, i = 0, j = 0, k = 0, MaxBin = 0;
 	double Power[2048] = {0}, HedrBuf[100] = {0}, tone[100] = {0}, Hann[882] = {0};
 	bool got_VIS = false;
 	uint8_t Bit[8] = {0}, ParityBit = 0;
@@ -39,13 +40,14 @@ uint8_t get_VIS () {
 
 	// Create 20ms Hann window
 	for (i = 0; i < 882; i++)
-		Hann[i] = 0.5 * (1 - cos( (2 * M_PI * (double)i) / 881 ) );
+		Hann[i] = 0.5 * (1 - cos((2 * M_PI * (double)i) / 881));
 
 	printf("Searching for SSTV header\n");
 
-	while ( !got_VIS && current_sample < wav_sample_count ) {
+	while (!got_VIS && current_sample < wav_sample_count)
+	{
 
-		if (verbose)
+		if (verbose > 1)
 			printf("Header/VIS scan starting %s\n", wav_elapsed(current_sample));
 
 		// Apply Hann window
@@ -57,20 +59,21 @@ uint8_t get_VIS () {
 
 		// Find the bin with most power
 		MaxBin = 0;
-		for (i = 0; i <= get_bin(6000, FFTLen); i++) {
+		for (i = 0; i <= get_bin(6000, FFTLen); i++)
+		{
 			Power[i] = power(fftw_out[i]);
-			if ( (i >= get_bin(500,FFTLen) && i < get_bin(3300,FFTLen)) &&
-					(MaxBin == 0 || Power[i] > Power[MaxBin]))
+			if ((i >= get_bin(500, FFTLen) && i < get_bin(3300, FFTLen)) &&
+				(MaxBin == 0 || Power[i] > Power[MaxBin]))
 				MaxBin = i;
 		}
 
 		// Find the peak frequency by Gaussian interpolation
 		if (MaxBin > get_bin(500, FFTLen) && MaxBin < get_bin(3300, FFTLen) &&
-				Power[MaxBin] > 0 && Power[MaxBin+1] > 0 && Power[MaxBin-1] > 0)
-			HedrBuf[HedrPtr] = MaxBin +            (log( Power[MaxBin + 1] / Power[MaxBin - 1] )) /
-				(2 * log( pow(Power[MaxBin], 2) / (Power[MaxBin + 1] * Power[MaxBin - 1])));
+			Power[MaxBin] > 0 && Power[MaxBin + 1] > 0 && Power[MaxBin - 1] > 0)
+			HedrBuf[HedrPtr] = MaxBin + (log(Power[MaxBin + 1] / Power[MaxBin - 1])) /
+											(2 * log(pow(Power[MaxBin], 2) / (Power[MaxBin + 1] * Power[MaxBin - 1])));
 		else
-			HedrBuf[HedrPtr] = HedrBuf[(HedrPtr-1) % 45];
+			HedrBuf[HedrPtr] = HedrBuf[(HedrPtr - 1) % 45];
 
 		// In Hertz
 		HedrBuf[HedrPtr] = HedrBuf[HedrPtr] / FFTLen * wav_sample_rate;
@@ -86,33 +89,39 @@ uint8_t get_VIS () {
 		// Tolerance ±25 Hz
 		shift = 0;
 		got_VIS = false;
-		for (i = 0; i < 3; i++) {
+		for (i = 0; i < 3; i++)
+		{
 			if (shift != 0)
 				break;
-			for (j = 0; j < 3; j++) {
-				if ( (tone[1*3+i]  > tone[0+j] - 25  && tone[1*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
-						(tone[2*3+i]  > tone[0+j] - 25  && tone[2*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
-						(tone[3*3+i]  > tone[0+j] - 25  && tone[3*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
-						(tone[4*3+i]  > tone[0+j] - 25  && tone[4*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
-						(tone[5*3+i]  > tone[0+j] - 725 && tone[5*3+i]  < tone[0+j] - 675) && // 1200 Hz start bit
-														      // ...8 VIS bits...
-						(tone[14*3+i] > tone[0+j] - 725 && tone[14*3+i] < tone[0+j] - 675)) { // 1200 Hz stop bit
+			for (j = 0; j < 3; j++)
+			{
+				if ((tone[1 * 3 + i] > tone[0 + j] - 25 && tone[1 * 3 + i] < tone[0 + j] + 25) &&	// 1900 Hz leader
+					(tone[2 * 3 + i] > tone[0 + j] - 25 && tone[2 * 3 + i] < tone[0 + j] + 25) &&	// 1900 Hz leader
+					(tone[3 * 3 + i] > tone[0 + j] - 25 && tone[3 * 3 + i] < tone[0 + j] + 25) &&	// 1900 Hz leader
+					(tone[4 * 3 + i] > tone[0 + j] - 25 && tone[4 * 3 + i] < tone[0 + j] + 25) &&	// 1900 Hz leader
+					(tone[5 * 3 + i] > tone[0 + j] - 725 && tone[5 * 3 + i] < tone[0 + j] - 675) && // 1200 Hz start bit
+																									// ...8 VIS bits...
+					(tone[14 * 3 + i] > tone[0 + j] - 725 && tone[14 * 3 + i] < tone[0 + j] - 675))
+				{ // 1200 Hz stop bit
 
 					// Attempt to read VIS
 
 					got_VIS = true;
-					for (k = 0; k < 8; k++) {
-						if      (tone[6*3+i+3*k] > tone[0+j] - 625 && tone[6*3+i+3*k] < tone[0+j] - 575)
+					for (k = 0; k < 8; k++)
+					{
+						if (tone[6 * 3 + i + 3 * k] > tone[0 + j] - 625 && tone[6 * 3 + i + 3 * k] < tone[0 + j] - 575)
 							Bit[k] = 0;
-						else if (tone[6*3+i+3*k] > tone[0+j] - 825 && tone[6*3+i+3*k] < tone[0+j] - 775
-							) Bit[k] = 1;
-						else { // erroneous bit
+						else if (tone[6 * 3 + i + 3 * k] > tone[0 + j] - 825 && tone[6 * 3 + i + 3 * k] < tone[0 + j] - 775)
+							Bit[k] = 1;
+						else
+						{ // erroneous bit
 							got_VIS = false;
 							break;
 						}
 					}
-					if (got_VIS) {
-						shift = tone[0+j] - 1900;
+					if (got_VIS)
+					{
+						shift = tone[0 + j] - 1900;
 
 						VIS = Bit[0] + (Bit[1] << 1) + (Bit[2] << 2) + (Bit[3] << 3) + (Bit[4] << 4) + (Bit[5] << 5) + (Bit[6] << 6);
 						ParityBit = Bit[7];
@@ -124,15 +133,18 @@ uint8_t get_VIS () {
 						if (vis_map[VIS] == R12BW)
 							Parity = !Parity;
 
-						if (Parity != ParityBit) {
+						if (Parity != ParityBit)
+						{
 							printf("  Parity fail\n");
 							got_VIS = false;
 						}
-						else if (vis_map[VIS] == UNKNOWN) {
+						else if (vis_map[VIS] == UNKNOWN)
+						{
 							printf("  Unknown VIS\n");
 							got_VIS = false;
-						} 
-						else {
+						}
+						else
+						{
 							break;
 						}
 					}
