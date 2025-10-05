@@ -30,3 +30,5 @@ Running
 Robot, Martin & Scottie test recordings were obtained from http://www.sigidwiki.com in MP3 format and converted to WAV with ffmpeg.
 
 At this time Wraase, PD and Pasokon modes have NOT been tested.
+
+PD180 & PD120 WAVs came from https://spacecomms.wordpress.com/iss-sstv-audio-recordings/
