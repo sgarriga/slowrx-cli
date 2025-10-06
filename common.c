@@ -28,8 +28,8 @@ uint8_t *lum_cache = NULL;
 uint32_t current_sample = 0;
 int shift = 0;
 
-double *fftw_in;
-fftw_complex *fftw_out;
+double *fftw_in = NULL;
+fftw_complex *fftw_out = NULL;
 fftw_plan fftw_plan1024;
 fftw_plan fftw_plan2048;
 

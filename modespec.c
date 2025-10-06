@@ -45,7 +45,7 @@
  *             <http://www.tima.com/~djones/line.txt>
  */
 
-_mode_spec mode_spec[] = {
+const _mode_spec mode_spec[] = {
 
 	[M1] = {// N7CXI, 2000
 			.mode_name = "Martin M1",
@@ -78,7 +78,7 @@ _mode_spec mode_spec[] = {
 			.sync_time = 4.862e-3,
 			.porch_time = 0.572e-3,
 			.sep_time = 0.572e-3,
-			.pixel_time = 0.2288e-3,
+			.pixel_time = 0.4576e-3,
 			.line_time = 446.446e-3,
 			.img_wide = 320,
 			.img_high = 128,
@@ -216,19 +216,31 @@ _mode_spec mode_spec[] = {
 			  .color_enc = BW,
 			  .channels = 1},
 
-	[W2120] = {
-		// KB4YZ, 1999
-		.mode_name = "Wraase SC-2 120",
-		.sync_time = 5.5225e-3,
-		.porch_time = 0.5e-3,
-		.sep_time = 0e-3,
-		.pixel_time = 0.489039081e-3,
-		.line_time = 475.530018e-3,
-		.img_wide = 320,
-		.img_high = 256,
-		.row_count = 1,
-		.color_enc = RGB,
-	},
+	[W260] = {// 
+			  .mode_name = "Wraase SC-2 60",
+			  .sync_time = 5.5225e-3,
+			  .porch_time = 0.5e-3,
+			  .sep_time = 0e-3,
+			  .pixel_time = 0.250400641e-3, //0.244844e-3,
+			  .line_time = 239.530018e-3, //240.3846154e-3,
+			  .img_wide = 256,
+			  .img_high = 256,
+			  .row_count = 1,
+			  .color_enc = RGB,
+			  .channels = 3},
+
+	[W2120] = {// KB4YZ, 1999
+			   .mode_name = "Wraase SC-2 120",
+			   .sync_time = 5.5225e-3,
+			   .porch_time = 0.5e-3,
+			   .sep_time = 0e-3,
+			   .pixel_time = 0.489039081e-3,
+			   .line_time = 475.530018e-3,
+			   .img_wide = 320,
+			   .img_high = 256,
+			   .row_count = 1,
+			   .color_enc = RGB,
+			   .channels = 3},
 
 	[W2180] = {// N7CXI, 2000
 			   .mode_name = "Wraase SC-2 180",
@@ -385,13 +397,13 @@ _mode_spec mode_spec[] = {
 
 //                  0     1     2     3    4     5     6     7     8     9     A     B    C    D    E     F
 
-uint8_t vis_map[] = {0, 0, R8BW, 0, R24, 0, R12BW, 0, R36, 0, R24BW, 0, R72, 0, 0, 0, // 0
-					 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,				  // 1
-					 M4, 0, 0, 0, M3, 0, 0, 0, M2, 0, 0, 0, M1, 0, 0, 0,			  // 2
-					 0, 0, 0, 0, 0, 0, 0, W2180, S2, 0, 0, 0, S1, 0, 0, W2120,		  // 3
-					 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, SDX, 0, 0, 0,				  // 4
-					 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, PD50, PD290, PD120,		  // 5
-					 PD180, PD240, PD160, PD90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	  // 6
-					 0, P3, P5, P7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};			  // 7
+const uint8_t vis_map[] = {0, 0, R8BW, 0, R24, 0, R12BW, 0, R36, 0, R24BW, 0, R72, 0, 0, 0, // 0
+						   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,					// 1
+						   M4, 0, 0, 0, M3, 0, 0, 0, M2, 0, 0, 0, M1, 0, 0, 0,				// 2
+						   0, 0, 0, 0, 0, 0, 0, W2180, S2, 0, 0, W260, S1, 0, 0, W2120,		// 3
+						   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, SDX, 0, 0, 0,				// 4
+						   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, PD50, PD290, PD120,		// 5
+						   PD180, PD240, PD160, PD90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	// 6
+						   0, P3, P5, P7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};				// 7
 
 //                  0     1     2     3    4     5     6     7     8     9     A     B    C    D    E     F

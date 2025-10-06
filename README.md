@@ -27,8 +27,13 @@ Running
 `  -s int       sync. adjustment (default 0.0)`<br>
 `  -h           show this information`<br>
 
-Robot, Martin & Scottie test recordings were obtained from http://www.sigidwiki.com in MP3 format and converted to WAV with ffmpeg.
 
-At this time Wraase, PD and Pasokon modes have NOT been tested.
 
-PD180 & PD120 WAVs came from https://spacecomms.wordpress.com/iss-sstv-audio-recordings/
+Robot (8-BW, 12-BW, 24-BW, 24, 36, 72), Martin (1, 2) & Scottie (1, 2, DX) test recordings were obtained from http://www.sigidwiki.com in MP3 format and converted to WAV with ffmpeg.
+PD180 & PD120 WAVs came from https://spacecomms.wordpress.com/iss-sstv-audio-recordings/.
+Wrasse SC2 180 WAV came from https://www.youtube.com/watch?v=KUojjnTkmV0 (Ardi Tan).
+
+Others from Kayra Gündoğar ÇETİN YouTube playlist https://www.youtube.com/@serebryanyy_volk
+
+Wraase SC-2 60 isn't working ta all
+Wraase SC-2 120 has a major slant

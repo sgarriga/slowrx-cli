@@ -126,7 +126,7 @@ uint8_t get_VIS()
 						VIS = Bit[0] + (Bit[1] << 1) + (Bit[2] << 2) + (Bit[3] << 3) + (Bit[4] << 4) + (Bit[5] << 5) + (Bit[6] << 6);
 						ParityBit = Bit[7];
 
-						printf("  VIS %d (%02Xh) @ %+d Hz\n", VIS, VIS, shift);
+						printf("VIS code = %d (0x%02X) @ %+d Hz\n", VIS, VIS, shift);
 
 						Parity = Bit[0] ^ Bit[1] ^ Bit[2] ^ Bit[3] ^ Bit[4] ^ Bit[5] ^ Bit[6];
 
@@ -135,12 +135,12 @@ uint8_t get_VIS()
 
 						if (Parity != ParityBit)
 						{
-							printf("  Parity fail\n");
+							printf("Parity fail\n");
 							got_VIS = false;
 						}
 						else if (vis_map[VIS] == UNKNOWN)
 						{
-							printf("  Unknown VIS\n");
+							printf("Unknown VIS\n");
 							got_VIS = false;
 						}
 						else
@@ -160,7 +160,6 @@ uint8_t get_VIS()
 
 	if (vis_map[VIS] != UNKNOWN)
 		return vis_map[VIS];
-
-	printf("  No VIS found\n");
-	return 0;
+	else
+		return 0;
 }

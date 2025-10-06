@@ -45,6 +45,11 @@ void process_image()
 	int cc = 0;
 
 	mode = get_VIS();
+	if (!mode)
+	{
+		perror("No VIS found");
+		exit(EXIT_FAILURE);
+	}
 	printf("==== %s ====\n", mode_spec[mode].mode_name);
 
 	cc = bmp_init(bmp_name, mode_spec[mode].img_high, mode_spec[mode].img_wide, mode_spec[mode].row_count);
@@ -55,20 +60,13 @@ void process_image()
 	}
 
 	// Allocate space for cached Lum
-	//free(lum_cache);
+	// free(lum_cache);
 	lum_cache = calloc((int)((mode_spec[mode].line_time * mode_spec[mode].img_high + 1) * wav_sample_rate), sizeof(uint8_t));
 	if (lum_cache == NULL)
 	{
 		perror("Unable to allocate memory for Lum");
 		exit(EXIT_FAILURE);
 	}
-
-	// Allocate space for sync signal
-	// has_sync = calloc((int)(mode_spec[mode].line_time * mode_spec[mode].img_high / (13.0/wav_sample_rate) +1), sizeof(bool));
-	// if (has_sync == NULL) {
-	// 	perror("Unable to allocate memory for sync signal");
-	// 	exit(EXIT_FAILURE);
-	// }
 
 	// Look for an FSK Id
 	get_FSK(id);
@@ -79,9 +77,10 @@ void process_image()
 	printf("get_image @ %.1f Hz, Skip %d, Shift %+d Hz\n", rate, skip, shift);
 	get_image(mode, rate, skip);
 
-	// free(has_sync);
-	// has_sync = NULL;
-	free(lum_cache);
+	if (lum_cache)
+	{
+		free(lum_cache);
+	}
 
 	cc = bmp_write();
 	if (cc)
@@ -199,8 +198,15 @@ int main(int argc, char *argv[])
 
 	fftw_destroy_plan(fftw_plan1024);
 	fftw_destroy_plan(fftw_plan2048);
-	fftw_free(fftw_in);
-	fftw_free(fftw_out);
+	
+	if (fftw_in)
+	{
+		fftw_free(fftw_in);
+	}
+	if (fftw_out)
+	{
+		fftw_free(fftw_out);
+	}
 
 	return (EXIT_SUCCESS);
 }

@@ -27,7 +27,7 @@ extern uint8_t verbose;
 extern bool adaptive;
 // extern bool     *has_sync;
 extern uint8_t *lum_cache;
-extern uint8_t vis_map[];
+extern const uint8_t vis_map[];
 extern int shift;
 
 extern double *fftw_in;
@@ -64,6 +64,7 @@ typedef enum
 	P3,
 	P5,
 	P7,
+	W260,
 	W2120,
 	W2180
 } sstv_mode_t;
@@ -92,7 +93,7 @@ typedef struct mode_spec
 	uint8_t channels;
 } _mode_spec;
 
-extern _mode_spec mode_spec[];
+extern const _mode_spec mode_spec[];
 
 double power(fftw_complex coeff);
 uint8_t clip(double a);
