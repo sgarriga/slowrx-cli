@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+extern uint8_t verbose;
+
 double *wav_samples = NULL; // will be malloc'd!
 uint32_t wav_sample_rate = 0;
 uint32_t wav_sample_count = 0;
@@ -110,7 +112,8 @@ int load_wav(char *filename)
 	// advance over any non-"data" chunk(s)
 	while (strncmp(hdr.chunk.sub_chunk_ID, "data", 4))
 	{ // fact, ????
-		printf("Shipping \"%4.4s\" chunk\n", hdr.chunk.sub_chunk_ID);
+		if (verbose)
+			printf("Skipping \"%4.4s\" chunk\n", hdr.chunk.sub_chunk_ID);
 		fseek(f, hdr.chunk.sub_chunk_size, SEEK_CUR);
 		got += fread(&hdr.chunk, sizeof(ChunkHdr), 1, f);
 	}
