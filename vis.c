@@ -17,7 +17,7 @@
 
 #include <math.h>
 #include "common.h"
-
+#include "modespec.h"
 /*
  * Mapping of 7-bit VIS codes to modes
  *

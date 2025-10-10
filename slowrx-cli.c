@@ -29,6 +29,8 @@
 #include <sys/types.h>
 #include <limits.h>
 #include "common.h"
+#include "modespec.h"
+#include "image.h"
 #include "bmp.h"
 
 static char bmp_name[PATH_MAX + 1] = "result.bmp";

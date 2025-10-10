@@ -14,34 +14,10 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#ifndef _COMMON_H_
-#define _COMMON_H_
-#include <stdlib.h>
-#include <fftw3.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include "wav.h"
+#ifndef _IMAGE_H_
+#define _IMAGE_H_
+#include "modespec.h"
 
-extern uint8_t verbose;
-
-extern bool adaptive;
-// extern bool     *has_sync;
-extern uint8_t *lum_cache;
-extern int shift;
-
-extern double *fftw_in;
-extern fftw_complex *fftw_out;
-extern fftw_plan fftw_plan1024;
-extern fftw_plan fftw_plan2048;
-
-extern uint32_t current_sample;
-
-double power(fftw_complex coeff);
-uint8_t clip(double a);
-double deg2rad(double deg);
-void get_FSK(char *dest);
-//bool get_image(sstv_mode_spec_t *mode, double rate, int skip);
-//sstv_mode_t get_VIS();
-int get_bin(double freq, int fft_len);
+bool get_image(sstv_mode_spec_t *mode, double rate, int skip);
 
 #endif

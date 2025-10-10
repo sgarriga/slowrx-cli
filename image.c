@@ -20,6 +20,7 @@
 #include <string.h>
 #include "common.h"
 #include "bmp.h"
+#include "image.h"
 
 /* Demodulate the video signal & store all kinds of stuff for later stages
  *  mode:      Martin_1, Martin_2, Scottie_1, Scottie2, Robot72, Robot36...

@@ -14,8 +14,8 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
-#include "common.h"
+#include <stdlib.h>
+#include "modespec.h"
 
 sstv_mode_spec_t *get_mode_spec(sstv_mode_t mode)
 {
