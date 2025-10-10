@@ -45,9 +45,9 @@ void process_image()
 	int cc = 0;
 
 	mode = get_VIS();
-	if (!mode)
+	if (mode == UNKNOWN)
 	{
-		perror("No VIS found");
+		perror("Supported  VIS not found");
 		exit(EXIT_FAILURE);
 	}
 	printf("==== %s ====\n", mode_spec[mode].mode_name);

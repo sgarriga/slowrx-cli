@@ -26,7 +26,7 @@
  *
  */
 
-uint8_t get_VIS()
+sstv_mode_t get_VIS()
 {
 
 	int VIS = 0, Parity = 0, HedrPtr = 0;
@@ -130,7 +130,7 @@ uint8_t get_VIS()
 
 						Parity = Bit[0] ^ Bit[1] ^ Bit[2] ^ Bit[3] ^ Bit[4] ^ Bit[5] ^ Bit[6];
 
-						if (vis_map[VIS] == R12BW)
+						if (vis_map[VIS] == Robot_12BW)
 							Parity = !Parity;
 
 						if (Parity != ParityBit)
@@ -158,8 +158,5 @@ uint8_t get_VIS()
 	// Skip the rest of the stop bit
 	current_sample += 20e-3 * wav_sample_rate;
 
-	if (vis_map[VIS] != UNKNOWN)
-		return vis_map[VIS];
-	else
-		return 0;
+	return got_VIS? vis_map[VIS] : UNKNOWN;
 }

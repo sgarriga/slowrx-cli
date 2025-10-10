@@ -27,7 +27,6 @@ extern uint8_t verbose;
 extern bool adaptive;
 // extern bool     *has_sync;
 extern uint8_t *lum_cache;
-extern const uint8_t vis_map[];
 extern int shift;
 
 extern double *fftw_in;
@@ -37,36 +36,50 @@ extern fftw_plan fftw_plan2048;
 
 extern uint32_t current_sample;
 
-// SSTV modes
+// SSTV modes/VIS codes - not all are implemented (see mode_spec[] for that)
 typedef enum
 {
-	UNKNOWN = 0,
-	M1,
-	M2,
-	M3,
-	M4,
-	S1,
-	S2,
-	SDX,
-	R72,
-	R36,
-	R24,
-	R24BW,
-	R12BW,
-	R8BW,
-	PD50,
-	PD90,
-	PD120,
-	PD160,
-	PD180,
-	PD240,
-	PD290,
-	P3,
-	P5,
-	P7,
-	W260,
-	W2120,
-	W2180
+        UNKNOWN = 0xff, // 0 is used for Robot12 - needs to be an unused uint8_t value
+
+        // Martin modes
+        Martin_1 = 44,
+        Martin_2 = 40,
+        Martin_3 = 36,
+        Martin_4 = 32,
+
+        // Scottie modes
+        Scottie_1 = 60,
+        Scottie2 = 56,
+        ScottieDX = 76,
+
+        // Robot modes
+        Robot72 = 12,
+        Robot36 = 8,
+        Robot24 = 4,
+        Robot12 = 0,
+        Robot_24BW = 10, // green
+        Robot_12BW = 6,      // green
+        Robot_8BW = 2,       // green
+
+        // PD modes
+        PD_50 = 93,
+        PD_90 = 99,
+        PD_120 = 95,
+        PD_160 = 98,
+        PD_180 = 96,
+        PD_240 = 97,
+        PD_290 = 94,
+
+        // Pasokon modes
+        Pasokon_3 = 113,
+        Pasokon_5 = 114,
+        Pasokon_7 = 115,
+
+        // Wraase modes
+        Wraase_S2_30 = 51,
+        Wraase_S2_60 = 59,
+        Wraase_S2_120 = 63,
+        Wraase_S2_180 = 55
 } sstv_mode_t;
 
 // Color encodings
@@ -94,13 +107,14 @@ typedef struct mode_spec
 } _mode_spec;
 
 extern const _mode_spec mode_spec[];
+extern const sstv_mode_t vis_map[];
 
 double power(fftw_complex coeff);
 uint8_t clip(double a);
 double deg2rad(double deg);
 void get_FSK(char *dest);
 bool get_image(sstv_mode_t mode, double rate, int skip);
-uint8_t get_VIS();
+sstv_mode_t get_VIS();
 int get_bin(double freq, int fft_len);
 
 #endif

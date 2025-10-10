@@ -22,7 +22,7 @@
 #include "bmp.h"
 
 /* Demodulate the video signal & store all kinds of stuff for later stages
- *  mode:      M1, M2, S1, S2, R72, R36...
+ *  mode:      Martin_1, Martin_2, Scottie_1, Scottie2, Robot72, Robot36...
  *  rate:      exact sampling rate used
  *  skip:      number of PCM samples to skip at the beginning (for sync phase adjustment)
  *  returns:   true when finished, false when aborted
@@ -72,8 +72,8 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 	switch (mode)
 	{
 
-	case R72:
-	case R24:
+	case Robot72:
+	case Robot24:
 		ChanLen[0] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide * 2;
 		ChanLen[1] = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
 		ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
@@ -81,7 +81,7 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sep_time;
 		break;
 
-	case R36:
+	case Robot36:
 		ChanLen[0] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide * 2;
 		ChanLen[1] = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
 		ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
@@ -89,22 +89,22 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 		ChanStart[2] = ChanStart[1];
 		break;
 
-	case S1:
-	case S2:
-	case SDX:
+	case Scottie_1:
+	case Scottie2:
+	case ScottieDX:
 		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
 		ChanStart[0] = mode_spec[mode].sep_time;
 		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
 		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sync_time + mode_spec[mode].porch_time;
 		break;
 
-	case PD50:
-	case PD90:
-	case PD120:
-	case PD160:
-	case PD180:
-	case PD240:
-	case PD290:
+	case PD_50:
+	case PD_90:
+	case PD_120:
+	case PD_160:
+	case PD_180:
+	case PD_240:
+	case PD_290:
 		ChanLen[0] = ChanLen[1] = ChanLen[2] = ChanLen[3] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
 		ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
 		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
@@ -182,7 +182,7 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 				for (x = 0; x < mode_spec[mode].img_wide; x++)
 				{
 
-					if (mode == R36)
+					if (mode == Robot36)
 					{
 						if (Channel == 1)
 						{
@@ -224,13 +224,13 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 	}
 
 	// TODO - investigate PD modes further
-	/*case PD50:
-	  case PD90:
-	  case PD120:
-	  case PD160:
-	  case PD180:
-	  case PD240:
-	  case PD290:
+	/*case PD_50:
+	  case PD_90:
+	  case PD_120:
+	  case PD_160:
+	  case PD_180:
+	  case PD_240:
+	  case PD_290:
 	  if (Curline_time >= ChanStart[2] + ChanLen[2]) Channel = 3; // ch 0 of even line
 	  else if (Curline_time >= ChanStart[2])         Channel = 2;
 	  else if (Curline_time >= ChanStart[1])         Channel = 1;
@@ -354,7 +354,7 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 				WinIdx = 6;
 
 			// Minimum winlength can be doubled for Scottie DX
-			if (mode == SDX && WinIdx < 6)
+			if (mode == ScottieDX && WinIdx < 6)
 				WinIdx++;
 
 			memset(fftw_in, 0, sizeof(double) * FFTLen);
@@ -417,7 +417,7 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 				Image[x][y][Channel] = lum_cache[SampleNum];
 
 				// Some modes have R-Y & B-Y channels that are twice the height of the Y channel
-				if (Channel > 0 && (mode == R36 /* || mode == R24 */))
+				if (Channel > 0 && (mode == Robot36 /* || mode == Robot24 */))
 					Image[x][y + 1][Channel] = lum_cache[SampleNum];
 
 				if (x == mode_spec[mode].img_wide - 1 || PixelGrid[PixelIdx].Last)
