@@ -58,8 +58,8 @@ typedef enum
         Robot24 = 4,
         Robot12 = 0,
         Robot_24BW = 10, // green
-        Robot_12BW = 6,      // green
-        Robot_8BW = 2,       // green
+        Robot_12BW = 6,  // green
+        Robot_8BW = 2,   // green
 
         // PD modes
         PD_50 = 93,
@@ -85,26 +85,26 @@ typedef enum
 // Color encodings
 typedef enum
 {
-	GBR,
-	RGB,
-	YUV,
-	BW
+        GBR,
+        RGB,
+        YUV,
+        BW
 } color_enc_t;
 
 typedef struct mode_spec
 {
-	sstv_mode_t mode;
-	char *mode_name;
-	double sync_time;
-	double porch_time;
-	double sep_time;
-	double pixel_time;
-	double line_time;
-	uint16_t img_wide;
-	uint16_t img_high;
-	uint8_t row_count;
-	color_enc_t color_enc;
-	uint8_t channels;
+        sstv_mode_t mode;
+        char *mode_name;
+        double sync_time;
+        double porch_time;
+        double sep_time;
+        double pixel_time;
+        double line_time;
+        uint16_t img_wide;
+        uint16_t img_high;
+        uint8_t row_count;
+        color_enc_t color_enc;
+        uint8_t channels;
 } sstv_mode_spec_t;
 
 sstv_mode_spec_t *get_mode_spec(sstv_mode_t mode);

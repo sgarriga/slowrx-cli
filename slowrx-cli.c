@@ -43,7 +43,7 @@ void process_image()
 	sstv_mode_t mode = 0;
 	char id[20] = "";
 	int cc = 0;
-        sstv_mode_spec_t *mode_spec = NULL;
+	sstv_mode_spec_t *mode_spec = NULL;
 
 	mode = get_VIS();
 	if (mode == UNKNOWN)
@@ -51,10 +51,10 @@ void process_image()
 		fprintf(stderr, "Supported  VIS not found\n");
 		exit(EXIT_FAILURE);
 	}
-        mode_spec = get_mode_spec(mode);
+	mode_spec = get_mode_spec(mode);
 	if (mode_spec == NULL)
 	{
-		fprintf(stderr, "VIS spec not found %d\n", (uint8_t) mode);
+		fprintf(stderr, "VIS spec not found %d\n", (uint8_t)mode);
 		exit(EXIT_FAILURE);
 	}
 
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
 
 	fftw_destroy_plan(fftw_plan1024);
 	fftw_destroy_plan(fftw_plan2048);
-	
+
 	if (fftw_in)
 	{
 		fftw_free(fftw_in);
