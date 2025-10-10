@@ -271,7 +271,7 @@ sstv_mode_spec_t *get_mode_spec(sstv_mode_t mode)
 		mode_spec.porch_time = 2.08e-3;
 		mode_spec.sep_time = 0e-3;
 		mode_spec.pixel_time = 0.532e-3;
-		mode_spec.line_time = 70.04e-3;
+		mode_spec.line_time = 703.04e-3;
 		mode_spec.img_wide = 320;
 		mode_spec.img_high = 256;
 		mode_spec.row_count = 1;
