@@ -19,6 +19,47 @@
 #include "common.h"
 
 /*
+ * Mapping of 7-bit VIS codes to modes
+ *
+ */
+
+sstv_mode_t vis_map(uint8_t vis) {
+    switch (vis) {
+case  Robot_8BW:
+case  Robot24:
+case  Robot_12BW:
+case  Robot36:
+case  Robot_24BW:
+case  Robot72:
+case Martin_4:
+case  Martin_3:
+case  Martin_2:
+case  Martin_1:
+case  Wraase_S2_180:
+case  Scottie2:
+case  Wraase_S2_60:
+case  Scottie_1:
+case  Wraase_S2_120:
+case  ScottieDX:
+case  PD_50:
+case  PD_290:
+case  PD_120:
+case PD_180:
+case  PD_240:
+case  PD_160:
+case  PD_90:
+case  Pasokon_3:
+case  Pasokon_5:
+case  Pasokon_7:
+    break;
+default:
+return UNKNOWN;
+}
+return (sstv_mode_t)vis;
+}
+
+
+/*
  *
  * Detect VIS & frequency shift
  *
@@ -130,7 +171,7 @@ sstv_mode_t get_VIS()
 
 						Parity = Bit[0] ^ Bit[1] ^ Bit[2] ^ Bit[3] ^ Bit[4] ^ Bit[5] ^ Bit[6];
 
-						if (vis_map[VIS] == Robot_12BW)
+						if (VIS == (uint8_t) Robot_12BW)
 							Parity = !Parity;
 
 						if (Parity != ParityBit)
@@ -138,7 +179,7 @@ sstv_mode_t get_VIS()
 							printf("Parity fail\n");
 							got_VIS = false;
 						}
-						else if (vis_map[VIS] == UNKNOWN)
+						else if (vis_map(VIS) == UNKNOWN)
 						{
 							printf("Unknown VIS\n");
 							got_VIS = false;
@@ -158,5 +199,5 @@ sstv_mode_t get_VIS()
 	// Skip the rest of the stop bit
 	current_sample += 20e-3 * wav_sample_rate;
 
-	return got_VIS? vis_map[VIS] : UNKNOWN;
+	return got_VIS? vis_map(VIS) : UNKNOWN;
 }

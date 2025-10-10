@@ -40,31 +40,39 @@ static int skip = 0;	  // can be used to adjust slant
 
 void process_image()
 {
-	uint8_t mode = 0;
+	sstv_mode_t mode = 0;
 	char id[20] = "";
 	int cc = 0;
+        sstv_mode_spec_t *mode_spec = NULL;
 
 	mode = get_VIS();
 	if (mode == UNKNOWN)
 	{
-		perror("Supported  VIS not found");
+		fprintf(stderr, "Supported  VIS not found\n");
 		exit(EXIT_FAILURE);
 	}
-	printf("==== %s ====\n", mode_spec[mode].mode_name);
+        mode_spec = get_mode_spec(mode);
+	if (mode_spec == NULL)
+	{
+		fprintf(stderr, "VIS spec not found %d\n", (uint8_t) mode);
+		exit(EXIT_FAILURE);
+	}
 
-	cc = bmp_init(bmp_name, mode_spec[mode].img_high, mode_spec[mode].img_wide, mode_spec[mode].row_count);
+	printf("==== %s ====\n", mode_spec->mode_name);
+
+	cc = bmp_init(bmp_name, mode_spec->img_high, mode_spec->img_wide, mode_spec->row_count);
 	if (cc != 0)
 	{
-		perror("Cannot allocate memory for BMP");
+		fprintf(stderr, "Cannot allocate memory for BMP\n");
 		exit(EXIT_FAILURE);
 	}
 
 	// Allocate space for cached Lum
 	// free(lum_cache);
-	lum_cache = calloc((int)((mode_spec[mode].line_time * mode_spec[mode].img_high + 1) * wav_sample_rate), sizeof(uint8_t));
+	lum_cache = calloc((int)((mode_spec->line_time * mode_spec->img_high + 1) * wav_sample_rate), sizeof(uint8_t));
 	if (lum_cache == NULL)
 	{
-		perror("Unable to allocate memory for Lum");
+		fprintf(stderr, "Unable to allocate memory for Lum\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -75,7 +83,7 @@ void process_image()
 
 	// Decode image
 	printf("get_image @ %.1f Hz, Skip %d, Shift %+d Hz\n", rate, skip, shift);
-	get_image(mode, rate, skip);
+	get_image(mode_spec, rate, skip);
 
 	if (lum_cache)
 	{
@@ -161,7 +169,7 @@ int main(int argc, char *argv[])
 
 	if (cc)
 	{
-		perror("Must specify input");
+		fprintf(stderr, "Must specify input\n");
 		exit(EXIT_FAILURE);
 	}
 	cc = load_wav(wav);
@@ -178,13 +186,13 @@ int main(int argc, char *argv[])
 	fftw_in = fftw_alloc_real(2048);
 	if (fftw_in == NULL)
 	{
-		perror("Unable to allocate memory for FFT");
+		fprintf(stderr, "Unable to allocate memory for FFT\n");
 		exit(EXIT_FAILURE);
 	}
 	fftw_out = fftw_alloc_complex(2048);
 	if (fftw_out == NULL)
 	{
-		perror("Unable to allocate memory for FFT");
+		fprintf(stderr, "Unable to allocate memory for FFT\n");
 		exit(EXIT_FAILURE);
 	}
 	memset(fftw_in, 0, sizeof(double) * 2048);

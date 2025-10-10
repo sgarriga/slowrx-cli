@@ -93,6 +93,7 @@ typedef enum
 
 typedef struct mode_spec
 {
+	sstv_mode_t mode;
 	char *mode_name;
 	double sync_time;
 	double porch_time;
@@ -104,16 +105,15 @@ typedef struct mode_spec
 	uint8_t row_count;
 	color_enc_t color_enc;
 	uint8_t channels;
-} _mode_spec;
+} sstv_mode_spec_t;
 
-extern const _mode_spec mode_spec[];
-extern const sstv_mode_t vis_map[];
+sstv_mode_spec_t *get_mode_spec(sstv_mode_t mode);
 
 double power(fftw_complex coeff);
 uint8_t clip(double a);
 double deg2rad(double deg);
 void get_FSK(char *dest);
-bool get_image(sstv_mode_t mode, double rate, int skip);
+bool get_image(sstv_mode_spec_t *mode, double rate, int skip);
 sstv_mode_t get_VIS();
 int get_bin(double freq, int fft_len);
 

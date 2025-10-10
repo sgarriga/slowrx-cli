@@ -27,7 +27,7 @@
  *  skip:      number of PCM samples to skip at the beginning (for sync phase adjustment)
  *  returns:   true when finished, false when aborted
  */
-bool get_image(sstv_mode_t mode, double rate, int skip)
+bool get_image(sstv_mode_spec_t *mode_spec, double rate, int skip)
 {
 
 	int MaxBin = 0;
@@ -60,7 +60,7 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 	} _PixelGrid;
 
 	_PixelGrid *PixelGrid;
-	PixelGrid = calloc(mode_spec[mode].img_wide * mode_spec[mode].img_high * 3, sizeof(_PixelGrid));
+	PixelGrid = calloc(mode_spec->img_wide * mode_spec->img_high * 3, sizeof(_PixelGrid));
 
 	// Initialize Hann windows of different lengths
 	uint16_t HannLens[7] = {48, 64, 96, 128, 256, 512, 1024};
@@ -69,33 +69,33 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 			Hann[j][i] = 0.5 * (1 - cos((2 * M_PI * i) / (HannLens[j] - 1)));
 
 	// Starting times of video channels on every line, counted from beginning of line
-	switch (mode)
+	switch (mode_spec->mode)
 	{
 
 	case Robot72:
 	case Robot24:
-		ChanLen[0] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide * 2;
-		ChanLen[1] = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
-		ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
-		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
-		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sep_time;
+		ChanLen[0] = mode_spec->pixel_time * mode_spec->img_wide * 2;
+		ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
+		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
+		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
 		break;
 
 	case Robot36:
-		ChanLen[0] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide * 2;
-		ChanLen[1] = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
-		ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
-		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
+		ChanLen[0] = mode_spec->pixel_time * mode_spec->img_wide * 2;
+		ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
+		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
 		ChanStart[2] = ChanStart[1];
 		break;
 
 	case Scottie_1:
 	case Scottie2:
 	case ScottieDX:
-		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
-		ChanStart[0] = mode_spec[mode].sep_time;
-		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
-		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sync_time + mode_spec[mode].porch_time;
+		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanStart[0] = mode_spec->sep_time;
+		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
+		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sync_time + mode_spec->porch_time;
 		break;
 
 	case PD_50:
@@ -105,35 +105,35 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 	case PD_180:
 	case PD_240:
 	case PD_290:
-		ChanLen[0] = ChanLen[1] = ChanLen[2] = ChanLen[3] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
-		ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
-		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
-		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sep_time;
-		ChanStart[3] = ChanStart[2] + ChanLen[2] + mode_spec[mode].sep_time;
+		ChanLen[0] = ChanLen[1] = ChanLen[2] = ChanLen[3] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
+		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
+		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
+		ChanStart[3] = ChanStart[2] + ChanLen[2] + mode_spec->sep_time;
 		break;
 
 	default:
-		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec[mode].pixel_time * mode_spec[mode].img_wide;
-		ChanStart[0] = mode_spec[mode].sync_time + mode_spec[mode].porch_time;
-		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec[mode].sep_time;
-		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec[mode].sep_time;
+		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
+		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
+		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
 		break;
 	}
 
 	// plan ahead the time instants (in samples) at which to take pixels out
 	int PixelIdx = 0;
 
-	if (mode_spec[mode].channels == 4)
+	if (mode_spec->channels == 4)
 	{ // Working on PD* mode
 		// Each radio frame encodes two image lines
-		for (y = 0; y < mode_spec[mode].img_high; y += 2)
+		for (y = 0; y < mode_spec->img_high; y += 2)
 		{
-			for (Channel = 0; Channel < mode_spec[mode].channels; Channel++)
+			for (Channel = 0; Channel < mode_spec->channels; Channel++)
 			{
-				for (x = 0; x < mode_spec[mode].img_wide; x++)
+				for (x = 0; x < mode_spec->img_wide; x++)
 				{
-					PixelGrid[PixelIdx].Time = (int)round(rate * (y / 2 * mode_spec[mode].line_time + ChanStart[Channel] +
-																  mode_spec[mode].pixel_time * (x + 0.5))) +
+					PixelGrid[PixelIdx].Time = (int)round(rate * (y / 2 * mode_spec->line_time + ChanStart[Channel] +
+																  mode_spec->pixel_time * (x + 0.5))) +
 											   skip;
 					switch (Channel)
 					{
@@ -175,14 +175,14 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 	}
 	else
 	{
-		for (y = 0; y < mode_spec[mode].img_high; y++)
+		for (y = 0; y < mode_spec->img_high; y++)
 		{
-			for (Channel = 0; Channel < mode_spec[mode].channels; Channel++)
+			for (Channel = 0; Channel < mode_spec->channels; Channel++)
 			{
-				for (x = 0; x < mode_spec[mode].img_wide; x++)
+				for (x = 0; x < mode_spec->img_wide; x++)
 				{
 
-					if (mode == Robot36)
+					if (mode_spec->mode == Robot36)
 					{
 						if (Channel == 1)
 						{
@@ -199,8 +199,8 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 						PixelGrid[PixelIdx].Channel = Channel;
 					}
 
-					PixelGrid[PixelIdx].Time = (int)round(rate * (y * mode_spec[mode].line_time + ChanStart[Channel] +
-																  ((x - 0.5) / mode_spec[mode].img_wide * ChanLen[PixelGrid[PixelIdx].Channel]))) +
+					PixelGrid[PixelIdx].Time = (int)round(rate * (y * mode_spec->line_time + ChanStart[Channel] +
+																  ((x - 0.5) / mode_spec->img_wide * ChanLen[PixelGrid[PixelIdx].Channel]))) +
 											   skip;
 					PixelGrid[PixelIdx].X = x;
 					PixelGrid[PixelIdx].Y = y;
@@ -237,10 +237,10 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 	  else                                          Channel = 0;
 	  break;*/
 
-	if (mode_spec[mode].channels == 4) // In PD* modes, each radio frame encodes two image lines
-		Length = mode_spec[mode].line_time * mode_spec[mode].img_high / 2 * wav_sample_rate;
+	if (mode_spec->channels == 4) // In PD* modes, each radio frame encodes two image lines
+		Length = mode_spec->line_time * mode_spec->img_high / 2 * wav_sample_rate;
 	else
-		Length = mode_spec[mode].line_time * mode_spec[mode].img_high * wav_sample_rate;
+		Length = mode_spec->line_time * mode_spec->img_high * wav_sample_rate;
 	SyncTargetBin = get_bin(1200 + shift, FFTLen);
 	SyncSampleNum = 0;
 
@@ -354,7 +354,7 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 				WinIdx = 6;
 
 			// Minimum winlength can be doubled for Scottie DX
-			if (mode == ScottieDX && WinIdx < 6)
+			if (mode_spec->mode == ScottieDX && WinIdx < 6)
 				WinIdx++;
 
 			memset(fftw_in, 0, sizeof(double) * FFTLen);
@@ -417,17 +417,17 @@ bool get_image(sstv_mode_t mode, double rate, int skip)
 				Image[x][y][Channel] = lum_cache[SampleNum];
 
 				// Some modes have R-Y & B-Y channels that are twice the height of the Y channel
-				if (Channel > 0 && (mode == Robot36 /* || mode == Robot24 */))
+				if (Channel > 0 && (mode_spec->mode == Robot36 /* || mode_spec->mode == Robot24 */))
 					Image[x][y + 1][Channel] = lum_cache[SampleNum];
 
-				if (x == mode_spec[mode].img_wide - 1 || PixelGrid[PixelIdx].Last)
+				if (x == mode_spec->img_wide - 1 || PixelGrid[PixelIdx].Last)
 				{
 					if (verbose > 1)
 						printf("Transfer line to BMP!\n");
 
-					for (tx = 0; tx < mode_spec[mode].img_wide; tx++)
+					for (tx = 0; tx < mode_spec->img_wide; tx++)
 					{
-						switch (mode_spec[mode].color_enc)
+						switch (mode_spec->color_enc)
 						{
 
 						case RGB:
