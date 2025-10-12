@@ -113,6 +113,16 @@ bool get_image(sstv_mode_spec_t *mode_spec, double rate, int skip)
 		ChanStart[3] = ChanStart[2] + ChanLen[2] + mode_spec->sep_time;
 		break;
 
+	case Wraase_S2_60:
+	case Wraase_S2_120:
+		// Red & Blue channels are half-length
+		ChanLen[0] = ChanLen[2] = (mode_spec->pixel_time / 2.0) * mode_spec->img_wide;
+		ChanLen[1] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
+		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
+		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
+		break;
+
 	default:
 		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
 		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;

@@ -214,9 +214,9 @@ sstv_mode_spec_t *get_mode_spec(sstv_mode_t mode)
 		mode_spec.sync_time = 5.5225e-3;
 		mode_spec.porch_time = 0.5e-3;
 		mode_spec.sep_time = 0e-3;
-		mode_spec.pixel_time = 0.250400641e-3; // 0.244844e-3;
-		mode_spec.line_time = 239.530018e-3;   // 240.3846154e-3;
-		mode_spec.img_wide = 256;
+		mode_spec.pixel_time = 0.45703125e-3; /* (Green) */
+		mode_spec.line_time = 240.3846154e-3;
+		mode_spec.img_wide = 256; 
 		mode_spec.img_high = 256;
 		mode_spec.row_count = 1;
 		mode_spec.color_enc = RGB;
@@ -228,8 +228,8 @@ sstv_mode_spec_t *get_mode_spec(sstv_mode_t mode)
 		mode_spec.sync_time = 5.5225e-3;
 		mode_spec.porch_time = 0.5e-3;
 		mode_spec.sep_time = 0e-3;
-		mode_spec.pixel_time = 0.489039081e-3;
-		mode_spec.line_time = 475.530018e-3;
+		mode_spec.pixel_time = 0.734532e-3; /* (Green) */
+		mode_spec.line_time = 475.5300178e-3;
 		mode_spec.img_wide = 320;
 		mode_spec.img_high = 256;
 		mode_spec.row_count = 1;
@@ -244,7 +244,7 @@ sstv_mode_spec_t *get_mode_spec(sstv_mode_t mode)
 		mode_spec.sep_time = 0e-3;
 		mode_spec.pixel_time = 0.734532e-3;
 		mode_spec.line_time = 711.0225e-3;
-		mode_spec.img_wide = 320;
+		mode_spec.img_wide = 320; // some sources claim 512
 		mode_spec.img_high = 256;
 		mode_spec.row_count = 1;
 		mode_spec.color_enc = RGB;
