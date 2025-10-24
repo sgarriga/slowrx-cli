@@ -13,7 +13,7 @@ all: slowrx-cli
 slowrx-cli: $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS) -lfftw3 -lm -lpthread
 
-%.o: %.c common.h wav.h bmp.h
+%.o: %.c common.h wav.h bmp.h fsk.h modespec.h image.h
 	$(CC) $(CFLAGS) $(OFLAGS) -c -o $@ $<
 
 .PHONY: clean

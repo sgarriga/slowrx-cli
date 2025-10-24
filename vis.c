@@ -182,11 +182,12 @@ sstv_mode_t get_VIS()
 						}
 						else if (vis_map(VIS) == UNKNOWN)
 						{
-							printf("Unknown VIS\n");
+							printf("Unknown VIS value %d\n", VIS);
 							got_VIS = false;
 						}
 						else
 						{
+							printf("Found VIS value %d\n", VIS);
 							break;
 						}
 					}

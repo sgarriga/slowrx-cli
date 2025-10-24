@@ -26,11 +26,13 @@ typedef enum
 } BMP_RGB;
 
 // create the in-memory bitmap
-int bmp_init(char *fname, uint16_t height_in, uint16_t width_in, uint8_t row_count_in); // row_count_in is 1 or 2
+uint8_t bmp_init(char *fname, uint16_t height_in, uint16_t width_in, uint8_t row_count_in); // row_count_in is 1 or 2
 
 // write out the in-memory bitbap
-int bmp_write();
+uint8_t bmp_write();
 
 // plot pixels in the in-memory bitmap
 void bmp_plot(uint16_t x, uint16_t y, BMP_RGB rgb, uint8_t val);
+
+void bmp_free();
 #endif

@@ -137,7 +137,7 @@ int load_wav(char *filename)
 			break;
 		case 4:
 			// 16-bit stereo
-			for (size_t i = 0; i < (wav_sample_count * 2) && !feof(f); i++)
+			for (size_t i = 0; i < wav_sample_count && !feof(f); i++)
 			{
 				got += fread(sample16, sizeof(int16_t), 2, f);
 				switch (channel)
@@ -174,7 +174,7 @@ int load_wav(char *filename)
 			break;
 		case 2:
 			// 8-bit stereo
-			for (size_t i = 0; i < (wav_sample_count * 2) && !feof(f); i++)
+			for (size_t i = 0; i < wav_sample_count && !feof(f); i++)
 			{
 				got += fread(sample8, sizeof(int8_t), 2, f);
 				switch (channel)

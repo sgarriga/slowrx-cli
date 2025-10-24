@@ -18,7 +18,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#define BMP_C
 #include "bmp.h"
 
 extern uint8_t verbose;
@@ -36,7 +35,7 @@ static uint16_t width = 0;
 static char *filename = NULL;
 static uint8_t *in_mem_bmp = NULL; // will be malloc'd!
 
-int bmp_init(char *fname, uint16_t height_in, uint16_t width_in, uint8_t row_count_in)
+uint8_t bmp_init(char *fname, uint16_t height_in, uint16_t width_in, uint8_t row_count_in)
 {
 	height = height_in;
 	row_count = row_count_in;
@@ -57,24 +56,27 @@ int bmp_init(char *fname, uint16_t height_in, uint16_t width_in, uint8_t row_cou
 void bmp_plot(uint16_t x, uint16_t y, BMP_RGB rgb, uint8_t val)
 {
 	uint8_t (*in_mem_bmp_arr)[height][width][BYTES_PER_PIXEL] = (uint8_t (*)[height][width][BYTES_PER_PIXEL])in_mem_bmp;
-	if (flip_x)
-		x = 1 + width - x;
-	if (!flip_y)
-		y = 1 + height - y;
-	if (verbose) {
-		printf("Bimap plot @ %p [%d, %d]\n", in_mem_bmp_arr[y][x][(uint8_t)rgb], x, y);
-		fflush(stdout);
-	}
+
 	if (x > width || y > height)
 	{
-		if (verbose)
-			printf("Bitmap plot out of range: %d, %d\n", x, y);
+		printf("Bitmap plot out of range: %d, %d\n", x, y);
 		return;
 	}
+	
+	if (flip_x)
+		x = width - x;
+	if (!flip_y)
+		y = height - y;
+
+	if (verbose > 1) {
+		printf("Bitmap plot @ %p [%d, %d]\n", in_mem_bmp_arr[y][x][(uint8_t)rgb], x, y);
+		fflush(stdout);
+	}
+
 	(*in_mem_bmp_arr)[y][x][(uint8_t)rgb] = val;
 }
 
-int bmp_write()
+uint8_t bmp_write()
 {
 	FILE *bmp_file = fopen(filename, "wb");
 	if (!bmp_file)
@@ -195,6 +197,13 @@ int bmp_write()
 	printf("Wrote %d x %d bitmap file : %s\n", width, o_height, filename);
 
 	fclose(bmp_file);
-	free(in_mem_bmp);
+	bmp_free();
 	return 0;
+}
+
+void bmp_free() {
+	if (in_mem_bmp) {
+		free(in_mem_bmp);
+		in_mem_bmp = NULL;
+	}
 }

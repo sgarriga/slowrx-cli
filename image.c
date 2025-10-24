@@ -48,7 +48,7 @@ bool get_image(sstv_mode_spec_t *mode_spec, double rate, int skip)
 	double Pvideo_plus_noise = 0, Pnoise_only = 0, Pnoise = 0, Psignal = 0;
 	double SNR = 0;
 	double ChanStart[4] = {0}, ChanLen[4] = {0};
-	uint8_t Image[800][616][3] = {{{0}}};
+	static uint8_t Image[800][616][3] = {{{0}}};
 	uint8_t Channel = 0, WinIdx = 0;
 
 	typedef struct
@@ -62,6 +62,11 @@ bool get_image(sstv_mode_spec_t *mode_spec, double rate, int skip)
 
 	_PixelGrid *PixelGrid;
 	PixelGrid = calloc(mode_spec->img_wide * mode_spec->img_high * 3, sizeof(_PixelGrid));
+	if (!PixelGrid)
+	{
+		fprintf(stderr, "Unable to allocate memory for PixelGrid\n");
+		return false;
+	}
 
 	// Initialize Hann windows of different lengths
 	uint16_t HannLens[7] = {48, 64, 96, 128, 256, 512, 1024};
@@ -477,5 +482,7 @@ bool get_image(sstv_mode_spec_t *mode_spec, double rate, int skip)
 	}
 
 	free(PixelGrid);
+	PixelGrid = NULL;
+	
 	return true;
 }

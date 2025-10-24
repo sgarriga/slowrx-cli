@@ -32,6 +32,7 @@
 #include "modespec.h"
 #include "image.h"
 #include "bmp.h"
+#include "fsk.h"
 
 static char bmp_name[PATH_MAX + 1] = "result.bmp";
 uint8_t verbose = 0;
@@ -40,7 +41,7 @@ bool flip_y = false;
 static double rate = 0.0; // can be used to adjust slant
 static int skip = 0;	  // can be used to adjust slant
 
-void process_image()
+static bool process_image()
 {
 	sstv_mode_t mode = 0;
 	char id[20] = "";
@@ -50,14 +51,14 @@ void process_image()
 	mode = get_VIS();
 	if (mode == UNKNOWN)
 	{
-		fprintf(stderr, "Supported  VIS not found\n");
-		exit(EXIT_FAILURE);
+		fprintf(stderr, "Supported VIS not found\n");
+		return false;
 	}
 	mode_spec = get_mode_spec(mode);
 	if (mode_spec == NULL)
 	{
 		fprintf(stderr, "VIS spec not found %d\n", (uint8_t)mode);
-		exit(EXIT_FAILURE);
+		return false;
 	}
 
 	printf("==== %s ====\n", mode_spec->mode_name);
@@ -66,16 +67,16 @@ void process_image()
 	if (cc != 0)
 	{
 		fprintf(stderr, "Cannot allocate memory for BMP\n");
-		exit(EXIT_FAILURE);
+		return false;
 	}
 
 	// Allocate space for cached Lum
-	// free(lum_cache);
 	lum_cache = calloc((int)((mode_spec->line_time * mode_spec->img_high + 1) * wav_sample_rate), sizeof(uint8_t));
-	if (lum_cache == NULL)
+	if (!lum_cache)
 	{
+		bmp_free(); // free bmp memory
 		fprintf(stderr, "Unable to allocate memory for Lum\n");
-		exit(EXIT_FAILURE);
+		return false;
 	}
 
 	// Look for an FSK Id
@@ -87,17 +88,17 @@ void process_image()
 	printf("get_image @ %.1f Hz, Skip %d, Shift %+d Hz\n", rate, skip, shift);
 	get_image(mode_spec, rate, skip);
 
-	if (lum_cache)
-	{
-		free(lum_cache);
-	}
+    free(lum_cache);  // must be allocateed to get here
+	lum_cache = NULL;
 
-	cc = bmp_write();
+	cc = bmp_write(); // handles the free()
 	if (cc)
 	{
 		fprintf(stderr, "Unable to write %s, err = %d\n", bmp_name, cc);
-		exit(EXIT_FAILURE);
+		return false;
 	}
+
+	return true;
 }
 
 /*
@@ -191,32 +192,29 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Unable to allocate memory for FFT\n");
 		exit(EXIT_FAILURE);
 	}
+	memset(fftw_in, 0, sizeof(double) * 2048);
+
 	fftw_out = fftw_alloc_complex(2048);
 	if (fftw_out == NULL)
 	{
+		fftw_free(fftw_in);
 		fprintf(stderr, "Unable to allocate memory for FFT\n");
 		exit(EXIT_FAILURE);
 	}
-	memset(fftw_in, 0, sizeof(double) * 2048);
 
 	fftw_plan1024 = fftw_plan_dft_r2c_1d(1024, fftw_in, fftw_out, FFTW_ESTIMATE);
 	fftw_plan2048 = fftw_plan_dft_r2c_1d(2048, fftw_in, fftw_out, FFTW_ESTIMATE);
 
-	process_image();
+	(void)process_image();
 
 	free(wav_samples);
+	wav_samples = NULL;
 
 	fftw_destroy_plan(fftw_plan1024);
 	fftw_destroy_plan(fftw_plan2048);
 
-	if (fftw_in)
-	{
-		fftw_free(fftw_in);
-	}
-	if (fftw_out)
-	{
-		fftw_free(fftw_out);
-	}
+	fftw_free(fftw_in);
+	fftw_free(fftw_out);
 
-	return (EXIT_SUCCESS);
+	exit(EXIT_SUCCESS);
 }

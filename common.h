@@ -25,7 +25,6 @@
 extern uint8_t verbose;
 
 extern bool adaptive;
-// extern bool     *has_sync;
 extern uint8_t *lum_cache;
 extern int shift;
 
@@ -39,9 +38,6 @@ extern uint32_t current_sample;
 double power(fftw_complex coeff);
 uint8_t clip(double a);
 double deg2rad(double deg);
-void get_FSK(char *dest);
-//bool get_image(sstv_mode_spec_t *mode, double rate, int skip);
-//sstv_mode_t get_VIS();
 int get_bin(double freq, int fft_len);
 
 #endif
