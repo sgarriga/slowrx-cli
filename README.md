@@ -35,5 +35,4 @@ Wrasse SC2 180 WAV came from https://www.youtube.com/watch?v=KUojjnTkmV0 (Ardi T
 
 Others from Kayra Gündoğar ÇETİN YouTube playlist https://www.youtube.com/@serebryanyy_volk
 
-Wraase SC-2 60 isn't working ta all
-Wraase SC-2 120 has a major slant
+Wraase SC-2 60 & 120 need a lot of work
