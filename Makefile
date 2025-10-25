@@ -20,7 +20,12 @@ slowrx-cli: $(OBJECTS)
 clean:
 	rm -f slowrx $(OBJECTS)
 
+.PHONY: test1
+test1: slowrx-cli $(WAVS)
+	./test1.sh TESTDATA/Martin_M2.wav.gz
+
 .PHONY: test
 test: slowrx-cli $(WAVS)
 	./test.sh
+
 

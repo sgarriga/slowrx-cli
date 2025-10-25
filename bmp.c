@@ -42,7 +42,7 @@ uint8_t bmp_init(char *fname, uint16_t height_in, uint16_t width_in, uint8_t row
 	width = width_in;
 	o_height = height * row_count;
 	filename = fname;
-	in_mem_bmp = (uint8_t *)calloc(height * width * BYTES_PER_PIXEL, 13); // TODO figure out what is needed (why 13)
+	in_mem_bmp = (uint8_t *)calloc(height * width * BYTES_PER_PIXEL, 2); // TODO figure out why 2 is needed here
 	if (!in_mem_bmp)
 	{
 		printf("Could not allocate %d bytes\n", height * width * BYTES_PER_PIXEL);
@@ -98,92 +98,34 @@ uint8_t bmp_write()
 	if (verbose > 1)
 		printf("Writing bitmap file header\n");
 
-	unsigned char fileHeader[FILE_HEADER_SIZE] = {
-		0,
-		0, // signature
-		0,
-		0,
-		0,
-		0, // in_mem_bmp file size in bytes
-		0,
-		0,
-		0,
-		0, // reserved
-		0,
-		0,
-		0,
-		0, // start of pixel array
+	BITMAPFILEHEADER fileHeader = {
+		.bfType = 0x4d42, // "BM" = Bitmap!
+		.bfSize = htole32(fileSize),
+		.bfReserved1 = 0,
+		.bfReserved2 = 0,
+		.bfOffBits = htole32(FILE_HEADER_SIZE + INFO_HEADER_SIZE)
 	};
 
-	fileHeader[0] = (unsigned char)('B');
-	fileHeader[1] = (unsigned char)('M');
-	fileHeader[2] = (unsigned char)(fileSize);
-	fileHeader[3] = (unsigned char)(fileSize >> 8);
-	fileHeader[4] = (unsigned char)(fileSize >> 16);
-	fileHeader[5] = (unsigned char)(fileSize >> 24);
-	fileHeader[10] = (unsigned char)(FILE_HEADER_SIZE + INFO_HEADER_SIZE);
-
-	fwrite(fileHeader, FILE_HEADER_SIZE, 1, bmp_file);
+	fwrite(&fileHeader, sizeof(fileHeader), 1, bmp_file);
 
 	if (verbose > 1)
 		printf("Writing bitmap info header\n");
 
-	unsigned char infoHeader[INFO_HEADER_SIZE] = {
-		0,
-		0,
-		0,
-		0, // header size
-		0,
-		0,
-		0,
-		0, // in_mem_bmp width
-		0,
-		0,
-		0,
-		0, // in_mem_bmp height
-		0,
-		0, // number of color planes
-		0,
-		0, // bits per pixel
-		0,
-		0,
-		0,
-		0, // compression
-		0,
-		0,
-		0,
-		0, // in_mem_bmp size
-		0,
-		0,
-		0,
-		0, // horizontal resolution
-		0,
-		0,
-		0,
-		0, /// vertical resolution
-		0,
-		0,
-		0,
-		0, // colors in color table
-		0,
-		0,
-		0,
-		0, // important color count
+	BITMAPINFOHEADER infoHeader = {
+		.biSize = htole32(INFO_HEADER_SIZE),
+		.biWidth = htole32(width),
+		.biHeight = htole32(o_height),
+		.biPlanes = htole16(1),
+		.biBitCount = htole16(BYTES_PER_PIXEL * 8),
+		.biCompression = 0,
+		.biSizeImage = 0,
+		.biXPelsPerMeter = 0,
+		.biYPelsPerMeter = 0,
+		.biClrUsed = 0,
+		.biClrImportant = 0
 	};
 
-	infoHeader[0] = (unsigned char)(INFO_HEADER_SIZE);
-	infoHeader[4] = (unsigned char)(width);
-	infoHeader[5] = (unsigned char)(width >> 8);
-	infoHeader[6] = (unsigned char)(width >> 16);
-	infoHeader[7] = (unsigned char)(width >> 24);
-	infoHeader[8] = (unsigned char)(o_height);
-	infoHeader[9] = (unsigned char)(o_height >> 8);
-	infoHeader[10] = (unsigned char)(o_height >> 16);
-	infoHeader[11] = (unsigned char)(o_height >> 24);
-	infoHeader[12] = (unsigned char)(1);
-	infoHeader[14] = (unsigned char)(BYTES_PER_PIXEL * 8);
-
-	fwrite(infoHeader, INFO_HEADER_SIZE, 1, bmp_file);
+	fwrite(&infoHeader, sizeof(infoHeader), 1, bmp_file);
 
 	for (int i = 0; i < height; i++)
 	{
