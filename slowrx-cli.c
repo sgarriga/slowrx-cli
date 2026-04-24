@@ -153,6 +153,11 @@ int main(int argc, char *argv[])
 			skip = atoi(argv[++i]);
 			continue;
 		}
+		if (!strcmp("-g", argv[i]))
+		{
+			use_goertzel_sync = true;
+			continue;
+		}
 		if (!strcmp("-h", argv[i]))
 		{
 			printf("Usage:\n%s {opts} filename\n", argv[0]);
@@ -164,9 +169,22 @@ int main(int argc, char *argv[])
 			printf("  -v\t\tverbose output\n");
 			printf("  -r float\toverride WAV sample rate, Hz (default 44100)\n");
 			printf("  -s int\tsync. adjustment (default 0.0)\n");
+			printf("  -g\t\tuse Goertzel algorithm for sync detection\n");
 			printf("  -h\t\tshow this information\n");
+			printf("  -modes\t\tlist supported SSTV modes\n");
 			exit(0);
 		}
+
+		if (!strcmp("-modes", argv[i]))
+		{
+			printf("Supported SSTV modes:\n");
+			for (int j = 0; j < (int) (sizeof(mode_spec_table) / sizeof(mode_spec_table[0])); j++)
+			{
+				printf("  %s\n", mode_spec_table[j].mode_name);
+			}
+			exit(0);
+		}
+	
 		wav = argv[i];
 	};
 

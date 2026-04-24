@@ -22,64 +22,52 @@
 #include "bmp.h"
 #include "image.h"
 
-/* Demodulate the video signal & store all kinds of stuff for later stages
- *  mode:      Martin_1, Martin_2, Scottie_1, Scottie2, Robot72, Robot36...
- *  rate:      exact sampling rate used
- *  skip:      number of PCM samples to skip at the beginning (for sync phase adjustment)
- *  returns:   true when finished, false when aborted
- */
-bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
+typedef struct
 {
+	int X;
+	int Y;
+	int Time;
+	uint8_t Channel;
+	bool Last;
+} PixelGrid;
 
-	int MaxBin = 0;
-	int VideoPlusNoiseBins = 0, ReceiverBins = 0, NoiseOnlyBins = 0;
-	int n = 0;
-	int SyncSampleNum = 0;
-	int i = 0, j = 0;
-	int FFTLen = 1024, WinLength = 0;
-	int SyncTargetBin;
-	int SampleNum, Length;
-	int x = 0, y = 0, tx = 0, k = 0;
-	double Hann[7][1024] = {{0}};
-	double Freq = 0;
-	int NextSNRtime = 0, Nextsync_time = 0;
-	double Praw, Psync;
-	double Power[1024] = {0};
-	double Pvideo_plus_noise = 0, Pnoise_only = 0, Pnoise = 0, Psignal = 0;
-	double SNR = 0;
-	double ChanStart[4] = {0}, ChanLen[4] = {0};
-	static uint8_t Image[800][616][3] = {{{0}}};
-	uint8_t Channel = 0, WinIdx = 0;
+static inline size_t image_index(int x, int y, int width)
+{
+	return ((size_t)y * width + x) * 3;
+}
 
-	typedef struct
-	{
-		int X;
-		int Y;
-		int Time;
-		uint8_t Channel;
-		bool Last;
-	} _PixelGrid;
+static bool allocate_image_buffer(int width, int height, uint8_t **buffer, size_t *size)
+{
+	*size = (size_t)width * height * 3;
+	*buffer = calloc(1, *size);
+	return *buffer != NULL;
+}
 
-	_PixelGrid *PixelGrid;
-	PixelGrid = calloc(mode_spec->img_wide * mode_spec->img_high * 3, sizeof(_PixelGrid));
-	if (!PixelGrid)
-	{
-		fprintf(stderr, "Unable to allocate memory for PixelGrid\n");
-		return false;
-	}
+static bool allocate_pixel_grid(size_t count, PixelGrid **grid)
+{
+	*grid = calloc(count, sizeof(PixelGrid));
+	return *grid != NULL;
+}
 
-	// Initialize Hann windows of different lengths
-	uint16_t HannLens[7] = {48, 64, 96, 128, 256, 512, 1024};
+static void init_hann_windows(double Hann[7][1024], const uint16_t HannLens[7])
+{
+	int i, j;
 	for (j = 0; j < 7; j++)
+	{
 		for (i = 0; i < HannLens[j]; i++)
+		{
 			Hann[j][i] = 0.5 * (1 - cos((2 * M_PI * i) / (HannLens[j] - 1)));
+		}
+	}
+}
 
-	// Starting times of video channels on every line, counted from beginning of line
+static void compute_channel_timing(const sstv_mode_spec_t *mode_spec, double ChanStart[4], double ChanLen[4])
+{
 	switch (mode_spec->mode)
 	{
-
-	case Robot72:
-	case Robot24:
+	case Robot_72:
+	case Robot_24:
+	case Robot_12:
 		ChanLen[0] = mode_spec->pixel_time * mode_spec->img_wide * 2;
 		ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
 		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
@@ -87,7 +75,7 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
 		break;
 
-	case Robot36:
+	case Robot_36:
 		ChanLen[0] = mode_spec->pixel_time * mode_spec->img_wide * 2;
 		ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
 		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
@@ -96,8 +84,8 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 		break;
 
 	case Scottie_1:
-	case Scottie2:
-	case ScottieDX:
+	case Scottie_2:
+	case Scottie_DX:
 		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
 		ChanStart[0] = mode_spec->sep_time;
 		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
@@ -120,7 +108,7 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 
 	case Wraase_S2_60:
 	case Wraase_S2_120:
-		// Red & Blue channels are half-length
+	case Wraase_S2_30:
 		ChanLen[0] = ChanLen[2] = (mode_spec->pixel_time / 2.0) * mode_spec->img_wide;
 		ChanLen[1] = mode_spec->pixel_time * mode_spec->img_wide;
 		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
@@ -135,59 +123,86 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
 		break;
 	}
+}
 
-	// plan ahead the time instants (in samples) at which to take pixels out
-	int PixelIdx = 0;
+static double goertzel_detect(double *samples, int num_samples, double target_freq, double sample_rate)
+{
+	// Goertzel algorithm for detecting a specific frequency
+	// Returns the magnitude squared of the frequency component
+	
+	int k = (int)(0.5 + ((double)num_samples * target_freq) / sample_rate);
+	double omega = (2.0 * M_PI * k) / num_samples;
+	double sine = sin(omega);
+	double cosine = cos(omega);
+	double coeff = 2.0 * cosine;
+	
+	double q0 = 0.0, q1 = 0.0, q2 = 0.0;
+	
+	for (int i = 0; i < num_samples; i++)
+	{
+		q0 = coeff * q1 - q2 + samples[i];
+		q2 = q1;
+		q1 = q0;
+	}
+	
+	// Calculate magnitude squared
+	double real = q1 - q2 * cosine;
+	double imag = q2 * sine;
+	return real * real + imag * imag;
+}
+
+static bool build_pixel_grid(const sstv_mode_spec_t *mode_spec, double rate, int skip,
+				const double ChanStart[4], const double ChanLen[4],
+				PixelGrid *grid, size_t *pixel_count)
+{
+	size_t idx = 0;
+	int x, y;
+	uint8_t Channel;
 
 	if (mode_spec->channels == 4)
-	{ // Working on PD* mode
-		// Each radio frame encodes two image lines
+	{
 		for (y = 0; y < mode_spec->img_high; y += 2)
 		{
 			for (Channel = 0; Channel < mode_spec->channels; Channel++)
 			{
 				for (x = 0; x < mode_spec->img_wide; x++)
 				{
-					PixelGrid[PixelIdx].Time = (int)round(rate * (y / 2 * mode_spec->line_time + ChanStart[Channel] +
-																  mode_spec->pixel_time * (x + 0.5))) +
-											   skip;
+					int sample_time = (int)round(rate * (y / 2 * mode_spec->line_time + ChanStart[Channel] +
+						mode_spec->pixel_time * (x + 0.5))) + skip;
+
+					grid[idx].Time = sample_time;
+					grid[idx].X = x;
+					grid[idx].Y = y;
+					grid[idx].Last = false;
+
 					switch (Channel)
 					{
 					case 0:
-						PixelGrid[PixelIdx].X = x;
-						PixelGrid[PixelIdx].Y = y;
-						PixelGrid[PixelIdx].Channel = Channel;
-						PixelGrid[PixelIdx].Last = false;
-						PixelIdx++;
+						grid[idx].Channel = 0;
+						idx++;
 						break;
 
 					case 1:
 					case 2:
-						PixelGrid[PixelIdx].X = x;
-						PixelGrid[PixelIdx].Y = y;
-						PixelGrid[PixelIdx].Channel = Channel;
-						PixelGrid[PixelIdx].Last = false;
-						PixelIdx++;
-						PixelGrid[PixelIdx].Time = PixelGrid[PixelIdx - 1].Time;
-						PixelGrid[PixelIdx].X = x;
-						PixelGrid[PixelIdx].Y = y + 1;
-						PixelGrid[PixelIdx].Channel = Channel;
-						PixelGrid[PixelIdx].Last = false;
-						PixelIdx++;
+						grid[idx].Channel = Channel;
+						idx++;
+						grid[idx].Time = sample_time;
+						grid[idx].X = x;
+						grid[idx].Y = y + 1;
+						grid[idx].Channel = Channel;
+						grid[idx].Last = false;
+						idx++;
 						break;
 
 					case 3:
-						PixelGrid[PixelIdx].X = x;
-						PixelGrid[PixelIdx].Y = y + 1;
-						PixelGrid[PixelIdx].Channel = 0;
-						PixelGrid[PixelIdx].Last = false;
-						PixelIdx++;
+						grid[idx].Channel = 0;
+						grid[idx].Y = y + 1;
+						idx++;
 						break;
 					}
 				}
 			}
 		}
-		PixelGrid[PixelIdx - 1].Last = true;
 	}
 	else
 	{
@@ -197,40 +212,99 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 			{
 				for (x = 0; x < mode_spec->img_wide; x++)
 				{
-
-					if (mode_spec->mode == Robot36)
+					if (mode_spec->mode == Robot_36)
 					{
 						if (Channel == 1)
-						{
-							if (y % 2 == 0)
-								PixelGrid[PixelIdx].Channel = 1;
-							else
-								PixelGrid[PixelIdx].Channel = 2;
-						}
+							grid[idx].Channel = (y % 2 == 0) ? 1 : 2;
 						else
-							PixelGrid[PixelIdx].Channel = 0;
+							grid[idx].Channel = 0;
 					}
 					else
 					{
-						PixelGrid[PixelIdx].Channel = Channel;
+						grid[idx].Channel = Channel;
 					}
 
-					PixelGrid[PixelIdx].Time = (int)round(rate * (y * mode_spec->line_time + ChanStart[Channel] +
-																  ((x - 0.5) / mode_spec->img_wide * ChanLen[PixelGrid[PixelIdx].Channel]))) +
-											   skip;
-					PixelGrid[PixelIdx].X = x;
-					PixelGrid[PixelIdx].Y = y;
-
-					PixelGrid[PixelIdx].Last = false;
-
-					PixelIdx++;
+					grid[idx].Time = (int)round(rate * (y * mode_spec->line_time + ChanStart[Channel] +
+						((x - 0.5) / mode_spec->img_wide * ChanLen[grid[idx].Channel]))) + skip;
+					grid[idx].X = x;
+					grid[idx].Y = y;
+					grid[idx].Last = false;
+					idx++;
 				}
 			}
 		}
-		PixelGrid[PixelIdx - 1].Last = true;
 	}
 
-	for (k = 0; k < PixelIdx; k++)
+	if (idx == 0)
+		return false;
+
+	grid[idx - 1].Last = true;
+	*pixel_count = idx;
+	return true;
+}
+
+/* Demodulate the video signal & store all kinds of stuff for later stages
+ *  mode:      Martin_1, Martin_2, Scottie_1, Scottie2, Robot72, Robot36...
+ *  rate:      exact sampling rate used
+ *  skip:      number of PCM samples to skip at the beginning (for sync phase adjustment)
+ *  returns:   true when finished, false when aborted
+ */
+bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
+{
+
+	int MaxBin = 0;
+	int VideoPlusNoiseBins = 0, ReceiverBins = 0, NoiseOnlyBins = 0;
+	int n = 0;
+	int search_window = 1000; // samples to search for sync around expected
+	int expected_sync = 0;
+	double max_Psync_search = 0;
+	int best_sample = 0;
+	int searching = 0;
+	int i = 0;
+	int FFTLen = 1024, WinLength = 0;
+	int SyncTargetBin;
+	int SampleNum, Length;
+	int SyncSampleNum = 0;
+	int x = 0, y = 0, tx = 0, k = 0, PixelIdx = 0;
+	double Hann[7][1024] = {{0}};
+	double Freq = 0;
+	int NextSNRtime = 0, Nextsync_time = 0;
+	double Praw, Psync;
+	double Power[1024] = {0};
+	double Pvideo_plus_noise = 0, Pnoise_only = 0, Pnoise = 0, Psignal = 0;
+	double SNR = 0;
+	double ChanStart[4] = {0}, ChanLen[4] = {0};
+	uint8_t *Image = NULL;
+	size_t img_size = 0;
+	uint8_t Channel = 0, WinIdx = 0;
+	uint16_t HannLens[7] = {48, 64, 96, 128, 256, 512, 1024};
+	PixelGrid *PixelGrid = NULL;
+	size_t pixel_count = 0;
+
+	if (!allocate_image_buffer(mode_spec->img_wide, mode_spec->img_high, &Image, &img_size))
+	{
+		fprintf(stderr, "Failed to allocate memory for image\n");
+		return false;
+	}
+
+	if (!allocate_pixel_grid((size_t)mode_spec->img_wide * mode_spec->img_high * 3, &PixelGrid))
+	{
+		free(Image);
+		fprintf(stderr, "Unable to allocate memory for PixelGrid\n");
+		return false;
+	}
+
+	init_hann_windows(Hann, HannLens);
+	compute_channel_timing(mode_spec, ChanStart, ChanLen);
+
+	if (!build_pixel_grid(mode_spec, rate, skip, ChanStart, ChanLen, PixelGrid, &pixel_count))
+	{
+		free(Image);
+		free(PixelGrid);
+		return false;
+	}
+
+	for (k = 0; k < (int)pixel_count; k++)
 	{
 		if (PixelGrid[k].Time >= 0)
 		{
@@ -239,19 +313,6 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 		}
 	}
 
-	// TODO - investigate PD modes further
-	/*case PD_50:
-	  case PD_90:
-	  case PD_120:
-	  case PD_160:
-	  case PD_180:
-	  case PD_240:
-	  case PD_290:
-	  if (Curline_time >= ChanStart[2] + ChanLen[2]) Channel = 3; // ch 0 of even line
-	  else if (Curline_time >= ChanStart[2])         Channel = 2;
-	  else if (Curline_time >= ChanStart[1])         Channel = 1;
-	  else                                          Channel = 0;
-	  break;*/
 
 	if (mode_spec->channels == 4) // In PD* modes, each radio frame encodes two image lines
 		Length = mode_spec->line_time * mode_spec->img_high / 2 * wav_sample_rate;
@@ -259,6 +320,14 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 		Length = mode_spec->line_time * mode_spec->img_high * wav_sample_rate;
 	SyncTargetBin = get_bin(1200 + shift, FFTLen);
 	SyncSampleNum = 0;
+
+	// Initialize sync search
+	expected_sync = 0;
+	searching = 1;
+	Nextsync_time = expected_sync - search_window;
+	if (Nextsync_time < 0) Nextsync_time = 0;
+	max_Psync_search = 0;
+	best_sample = expected_sync;
 
 	// Loop through signal
 	for (SampleNum = 0; SampleNum < Length; SampleNum++)
@@ -268,34 +337,84 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 
 		/*** Store the sync band for later adjustments ***/
 
+		// Start sync search if close to expected
+		if (!searching && SampleNum >= expected_sync - 50 && SampleNum <= expected_sync + 50)
+		{
+			searching = 1;
+			Nextsync_time = expected_sync - search_window;
+			if (Nextsync_time < 0) Nextsync_time = 0;
+			max_Psync_search = 0;
+			best_sample = expected_sync;
+		}
+
 		if (SampleNum == Nextsync_time)
 		{
+			if (use_goertzel_sync)
+			{
+				// Use Goertzel algorithm for sync detection
+				int sync_win_len = 256;
+				int start_idx = current_sample - sync_win_len/2;
+				if (start_idx < 0) start_idx = 0;
+				
+				// Calculate sync power using Goertzel
+				Psync = goertzel_detect(&wav_samples[start_idx], sync_win_len, 1200.0 + shift, wav_sample_rate);
+				
+				// Calculate video band power using Goertzel for comparison
+				Praw = 0;
+				for (int freq = 1500; freq <= 2300; freq += 100) // Sample a few frequencies in video band
+				{
+					Praw += goertzel_detect(&wav_samples[start_idx], sync_win_len, freq + shift, wav_sample_rate);
+				}
+				Praw /= 9.0; // Average over 9 frequency points
+			}
+			else
+			{
+				// Original FFT-based sync detection
+				Praw = Psync = 0;
 
-			Praw = Psync = 0;
+				memset(fftw_in, 0, sizeof(double) * FFTLen);
 
-			memset(fftw_in, 0, sizeof(double) * FFTLen);
+				// Hann window - use longer window for better sync detection
+				int sync_win_len = 256; // increased from 64
+				for (i = 0; i < sync_win_len; i++)
+					fftw_in[i] = wav_samples[current_sample - sync_win_len/2 + i] * Hann[4][i]; // use Hann[4] for 256
 
-			// Hann window - use longer window for better sync detection
-			int sync_win_len = 256; // increased from 64
-			for (i = 0; i < sync_win_len; i++)
-				fftw_in[i] = wav_samples[current_sample - sync_win_len/2 + i] * Hann[4][i]; // use Hann[4] for 256
+				fftw_execute(fftw_plan1024);
 
-			fftw_execute(fftw_plan1024);
+				for (i = get_bin(1500 + shift, FFTLen); i <= get_bin(2300 + shift, FFTLen); i++)
+					Praw += power(fftw_out[i]);
 
-			for (i = get_bin(1500 + shift, FFTLen); i <= get_bin(2300 + shift, FFTLen); i++)
-				Praw += power(fftw_out[i]);
+				for (i = SyncTargetBin - 2; i <= SyncTargetBin + 2; i++) // wider bin range
+					Psync += power(fftw_out[i]) * (1 - 0.5 * abs(SyncTargetBin - i));
 
-			for (i = SyncTargetBin - 2; i <= SyncTargetBin + 2; i++) // wider bin range
-				Psync += power(fftw_out[i]) * (1 - 0.5 * abs(SyncTargetBin - i));
+				Praw /= (get_bin(2300 + shift, FFTLen) - get_bin(1500 + shift, FFTLen));
+				Psync /= 3.0; // adjusted for 5 bins
+			}
 
-			Praw /= (get_bin(2300 + shift, FFTLen) - get_bin(1500 + shift, FFTLen));
-			Psync /= 3.0; // adjusted for 5 bins
+			// Sync search
+			if (searching)
+			{
+				if (Psync > max_Psync_search)
+				{
+					max_Psync_search = Psync;
+					best_sample = SampleNum;
+				}
+				Nextsync_time += 13;
+				if (Nextsync_time > expected_sync + search_window)
+				{
+					searching = 0;
+					Nextsync_time = best_sample + (int)(mode_spec->line_time * wav_sample_rate);
+					expected_sync = Nextsync_time;
+				}
+			}
+			else
+			{
+				// If there is more than twice the amount of power per Hz in the
+				// sync band than in the video band, we have a sync signal here
+				// has_sync[SyncSampleNum] = (Psync > 2*Praw);
 
-			// If there is more than twice the amount of power per Hz in the
-			// sync band than in the video band, we have a sync signal here
-			// has_sync[SyncSampleNum] = (Psync > 2*Praw);
-
-			Nextsync_time += 13;
+				Nextsync_time += 13;
+			}
 			SyncSampleNum++;
 		}
 
@@ -371,7 +490,7 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 				WinIdx = 6;
 
 			// Minimum winlength can be doubled for Scottie DX
-			if (mode_spec->mode == ScottieDX && WinIdx < 6)
+			if (mode_spec->mode == Scottie_DX && WinIdx < 6)
 				WinIdx++;
 
 			memset(fftw_in, 0, sizeof(double) * FFTLen);
@@ -430,12 +549,11 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 				Channel = PixelGrid[PixelIdx].Channel;
 
 				// Store pixel
-				// printf("Plot %d, %d, %d = %d\n", x, y, Channel, lum_cache[SampleNum]);
-				Image[x][y][Channel] = lum_cache[SampleNum];
+				Image[(y * mode_spec->img_wide + x) * 3 + Channel] = lum_cache[SampleNum];
 
 				// Some modes have R-Y & B-Y channels that are twice the height of the Y channel
-				if (Channel > 0 && (mode_spec->mode == Robot36 /* || mode_spec->mode == Robot24 */))
-					Image[x][y + 1][Channel] = lum_cache[SampleNum];
+				if (Channel > 0 && (mode_spec->mode == Robot_36))
+					Image[((y + 1) * mode_spec->img_wide + x) * 3 + Channel] = lum_cache[SampleNum];
 
 				if (x == mode_spec->img_wide - 1 || PixelGrid[PixelIdx].Last)
 				{
@@ -448,27 +566,27 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 						{
 
 						case RGB:
-							bmp_plot(tx, y, RED, Image[tx][y][0]);
-							bmp_plot(tx, y, GREEN, Image[tx][y][1]);
-							bmp_plot(tx, y, BLUE, Image[tx][y][2]);
+							bmp_plot(tx, y, RED, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
+							bmp_plot(tx, y, GREEN, Image[(y * mode_spec->img_wide + tx) * 3 + 1]);
+							bmp_plot(tx, y, BLUE, Image[(y * mode_spec->img_wide + tx) * 3 + 2]);
 							break;
 
 						case GBR:
-							bmp_plot(tx, y, RED, Image[tx][y][2]);
-							bmp_plot(tx, y, GREEN, Image[tx][y][0]);
-							bmp_plot(tx, y, BLUE, Image[tx][y][1]);
+							bmp_plot(tx, y, RED, Image[(y * mode_spec->img_wide + tx) * 3 + 2]);
+							bmp_plot(tx, y, GREEN, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
+							bmp_plot(tx, y, BLUE, Image[(y * mode_spec->img_wide + tx) * 3 + 1]);
 							break;
 
 						case YUV:
-							bmp_plot(tx, y, RED, clip((100 * Image[tx][y][0] + 140 * Image[tx][y][1] - 17850) / 100.0));
-							bmp_plot(tx, y, GREEN, clip((100 * Image[tx][y][0] - 71 * Image[tx][y][1] - 33 * Image[tx][y][2] + 13260) / 100.0));
-							bmp_plot(tx, y, BLUE, clip((100 * Image[tx][y][0] + 178 * Image[tx][y][2] - 22695) / 100.0));
+							bmp_plot(tx, y, RED, clip((100 * Image[(y * mode_spec->img_wide + tx) * 3 + 0] + 140 * Image[(y * mode_spec->img_wide + tx) * 3 + 1] - 17850) / 100.0));
+							bmp_plot(tx, y, GREEN, clip((100 * Image[(y * mode_spec->img_wide + tx) * 3 + 0] - 71 * Image[(y * mode_spec->img_wide + tx) * 3 + 1] - 33 * Image[(y * mode_spec->img_wide + tx) * 3 + 2] + 13260) / 100.0));
+							bmp_plot(tx, y, BLUE, clip((100 * Image[(y * mode_spec->img_wide + tx) * 3 + 0] + 178 * Image[(y * mode_spec->img_wide + tx) * 3 + 2] - 22695) / 100.0));
 							break;
 
 						case BW:
-							bmp_plot(tx, y, RED, Image[tx][y][0]);
-							bmp_plot(tx, y, GREEN, Image[tx][y][0]);
-							bmp_plot(tx, y, BLUE, Image[tx][y][0]);
+							bmp_plot(tx, y, RED, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
+							bmp_plot(tx, y, GREEN, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
+							bmp_plot(tx, y, BLUE, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
 							break;
 						}
 					}
@@ -478,12 +596,13 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 			}
 		}
 
-		// current_sample += PixelGrid[PixelIdx].Time; // ??
 		current_sample++;
 	}
 
 	free(PixelGrid);
 	PixelGrid = NULL;
+	free(Image);
+	Image = NULL;
 	
 	return true;
 }

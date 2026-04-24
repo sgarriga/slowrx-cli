@@ -25,6 +25,7 @@
 extern uint8_t verbose;
 
 extern bool adaptive;
+extern bool use_goertzel_sync;
 extern uint8_t *lum_cache;
 extern int shift;
 

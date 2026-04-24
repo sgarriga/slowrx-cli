@@ -27,22 +27,24 @@ sstv_mode_t vis_map(uint8_t vis)
 {
 	switch (vis)
 	{
-	case Robot_8BW:
-	case Robot24:
-	case Robot_12BW:
-	case Robot36:
-	case Robot_24BW:
-	case Robot72:
+	case Robot_8_BW:
+	case Robot_24:
+	case Robot_12:
+	case Robot_12_BW:
+	case Robot_36:
+	case Robot_24_BW:
+	case Robot_72:
 	case Martin_4:
 	case Martin_3:
 	case Martin_2:
 	case Martin_1:
 	case Wraase_S2_180:
-	case Scottie2:
+	case Wraase_S2_30:
+	case Scottie_2:
 	case Wraase_S2_60:
 	case Scottie_1:
 	case Wraase_S2_120:
-	case ScottieDX:
+	case Scottie_DX:
 	case PD_50:
 	case PD_290:
 	case PD_120:
@@ -172,7 +174,7 @@ sstv_mode_t get_VIS()
 
 						Parity = Bit[0] ^ Bit[1] ^ Bit[2] ^ Bit[3] ^ Bit[4] ^ Bit[5] ^ Bit[6];
 
-						if (VIS == (uint8_t)Robot_12BW)
+						if (VIS == (uint8_t)Robot_12_BW)
 							Parity = !Parity;
 
 						if (Parity != ParityBit)

@@ -22,6 +22,7 @@
 #include "common.h"
 
 bool adaptive = true;
+bool use_goertzel_sync = false;
 bool *has_sync = NULL;
 uint8_t *lum_cache = NULL;
 
