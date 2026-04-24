@@ -86,10 +86,10 @@ typedef struct mode_spec
         uint16_t img_high;
         uint8_t row_count;
         color_enc_t color_enc;
-        uint8_t channels;
+        uint8_t channels; /* count of transmitted components or image channels */
 } sstv_mode_spec_t;
 
-sstv_mode_spec_t *get_mode_spec(sstv_mode_t mode);
+const sstv_mode_spec_t *get_mode_spec(sstv_mode_t mode);
 sstv_mode_t get_VIS();
 
 #endif

@@ -28,13 +28,13 @@
  *  skip:      number of PCM samples to skip at the beginning (for sync phase adjustment)
  *  returns:   true when finished, false when aborted
  */
-bool get_image(sstv_mode_spec_t *mode_spec, double rate, int skip)
+bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 {
 
 	int MaxBin = 0;
 	int VideoPlusNoiseBins = 0, ReceiverBins = 0, NoiseOnlyBins = 0;
 	int n = 0;
-	int SyncSampleNum;
+	int SyncSampleNum = 0;
 	int i = 0, j = 0;
 	int FFTLen = 1024, WinLength = 0;
 	int SyncTargetBin;
@@ -275,20 +275,21 @@ bool get_image(sstv_mode_spec_t *mode_spec, double rate, int skip)
 
 			memset(fftw_in, 0, sizeof(double) * FFTLen);
 
-			// Hann window
-			for (i = 0; i < 64; i++)
-				fftw_in[i] = wav_samples[current_sample - 32 + i] * Hann[1][i];
+			// Hann window - use longer window for better sync detection
+			int sync_win_len = 256; // increased from 64
+			for (i = 0; i < sync_win_len; i++)
+				fftw_in[i] = wav_samples[current_sample - sync_win_len/2 + i] * Hann[4][i]; // use Hann[4] for 256
 
 			fftw_execute(fftw_plan1024);
 
 			for (i = get_bin(1500 + shift, FFTLen); i <= get_bin(2300 + shift, FFTLen); i++)
 				Praw += power(fftw_out[i]);
 
-			for (i = SyncTargetBin - 1; i <= SyncTargetBin + 1; i++)
-				Psync += power(fftw_out[i]) * (1 - .5 * abs(SyncTargetBin - i));
+			for (i = SyncTargetBin - 2; i <= SyncTargetBin + 2; i++) // wider bin range
+				Psync += power(fftw_out[i]) * (1 - 0.5 * abs(SyncTargetBin - i));
 
 			Praw /= (get_bin(2300 + shift, FFTLen) - get_bin(1500 + shift, FFTLen));
-			Psync /= 2.0;
+			Psync /= 3.0; // adjusted for 5 bins
 
 			// If there is more than twice the amount of power per Hz in the
 			// sync band than in the video band, we have a sync signal here

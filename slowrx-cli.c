@@ -46,7 +46,7 @@ static bool process_image()
 	sstv_mode_t mode = 0;
 	char id[20] = "";
 	int cc = 0;
-	sstv_mode_spec_t *mode_spec = NULL;
+	const sstv_mode_spec_t *mode_spec = NULL;
 
 	mode = get_VIS();
 	if (mode == UNKNOWN)
