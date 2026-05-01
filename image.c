@@ -61,23 +61,23 @@ static void init_hann_windows(double Hann[7][1024], const uint16_t HannLens[7])
 	}
 }
 
-static void compute_channel_timing(const sstv_mode_spec_t *mode_spec, double ChanStart[4], double ChanLen[4])
+static void compute_channel_timing(const sstv_mode_spec_t *mode_spec, uint16_t width, double ChanStart[4], double ChanLen[4])
 {
 	switch (mode_spec->mode)
 	{
 	case Robot_72:
 	case Robot_24:
 	case Robot_12:
-		ChanLen[0] = mode_spec->pixel_time * mode_spec->img_wide * 2;
-		ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanLen[0] = mode_spec->pixel_time * width * 2;
+		ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * width;
 		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
 		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
 		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
 		break;
 
 	case Robot_36:
-		ChanLen[0] = mode_spec->pixel_time * mode_spec->img_wide * 2;
-		ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanLen[0] = mode_spec->pixel_time * width * 2;
+		ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * width;
 		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
 		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
 		ChanStart[2] = ChanStart[1];
@@ -86,7 +86,7 @@ static void compute_channel_timing(const sstv_mode_spec_t *mode_spec, double Cha
 	case Scottie_1:
 	case Scottie_2:
 	case Scottie_DX:
-		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * width;
 		ChanStart[0] = mode_spec->sep_time;
 		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
 		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sync_time + mode_spec->porch_time;
@@ -99,7 +99,7 @@ static void compute_channel_timing(const sstv_mode_spec_t *mode_spec, double Cha
 	case PD_180:
 	case PD_240:
 	case PD_290:
-		ChanLen[0] = ChanLen[1] = ChanLen[2] = ChanLen[3] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanLen[0] = ChanLen[1] = ChanLen[2] = ChanLen[3] = mode_spec->pixel_time * width;
 		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
 		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
 		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
@@ -109,15 +109,15 @@ static void compute_channel_timing(const sstv_mode_spec_t *mode_spec, double Cha
 	case Wraase_S2_60:
 	case Wraase_S2_120:
 	case Wraase_S2_30:
-		ChanLen[0] = ChanLen[2] = (mode_spec->pixel_time / 2.0) * mode_spec->img_wide;
-		ChanLen[1] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanLen[0] = ChanLen[2] = (mode_spec->pixel_time / 2.0) * width;
+		ChanLen[1] = mode_spec->pixel_time * width;
 		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
 		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
 		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
 		break;
 
 	default:
-		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * mode_spec->img_wide;
+		ChanLen[0] = ChanLen[1] = ChanLen[2] = mode_spec->pixel_time * width;
 		ChanStart[0] = mode_spec->sync_time + mode_spec->porch_time;
 		ChanStart[1] = ChanStart[0] + ChanLen[0] + mode_spec->sep_time;
 		ChanStart[2] = ChanStart[1] + ChanLen[1] + mode_spec->sep_time;
@@ -151,7 +151,7 @@ static double goertzel_detect(double *samples, int num_samples, double target_fr
 	return real * real + imag * imag;
 }
 
-static bool build_pixel_grid(const sstv_mode_spec_t *mode_spec, double rate, int skip,
+static bool build_pixel_grid(const sstv_mode_spec_t *mode_spec, uint16_t width, double rate, int skip,
 				const double ChanStart[4], const double ChanLen[4],
 				PixelGrid *grid, size_t *pixel_count)
 {
@@ -165,7 +165,7 @@ static bool build_pixel_grid(const sstv_mode_spec_t *mode_spec, double rate, int
 		{
 			for (Channel = 0; Channel < mode_spec->channels; Channel++)
 			{
-				for (x = 0; x < mode_spec->img_wide; x++)
+				for (x = 0; x < width; x++)
 				{
 					int sample_time = (int)round(rate * (y / 2 * mode_spec->line_time + ChanStart[Channel] +
 						mode_spec->pixel_time * (x + 0.5))) + skip;
@@ -210,7 +210,7 @@ static bool build_pixel_grid(const sstv_mode_spec_t *mode_spec, double rate, int
 		{
 			for (Channel = 0; Channel < mode_spec->channels; Channel++)
 			{
-				for (x = 0; x < mode_spec->img_wide; x++)
+				for (x = 0; x < width; x++)
 				{
 					if (mode_spec->mode == Robot_36)
 					{
@@ -225,7 +225,7 @@ static bool build_pixel_grid(const sstv_mode_spec_t *mode_spec, double rate, int
 					}
 
 					grid[idx].Time = (int)round(rate * (y * mode_spec->line_time + ChanStart[Channel] +
-						((x - 0.5) / mode_spec->img_wide * ChanLen[grid[idx].Channel]))) + skip;
+						((x - 0.5) / width * ChanLen[grid[idx].Channel]))) + skip;
 					grid[idx].X = x;
 					grid[idx].Y = y;
 					grid[idx].Last = false;
@@ -249,7 +249,7 @@ static bool build_pixel_grid(const sstv_mode_spec_t *mode_spec, double rate, int
  *  skip:      number of PCM samples to skip at the beginning (for sync phase adjustment)
  *  returns:   true when finished, false when aborted
  */
-bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
+bool get_image(const sstv_mode_spec_t *mode_spec, uint16_t width, double rate, int skip)
 {
 
 	int MaxBin = 0;
@@ -281,13 +281,13 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 	PixelGrid *PixelGrid = NULL;
 	size_t pixel_count = 0;
 
-	if (!allocate_image_buffer(mode_spec->img_wide, mode_spec->img_high, &Image, &img_size))
+	if (!allocate_image_buffer(width, mode_spec->img_high, &Image, &img_size))
 	{
 		fprintf(stderr, "Failed to allocate memory for image\n");
 		return false;
 	}
 
-	if (!allocate_pixel_grid((size_t)mode_spec->img_wide * mode_spec->img_high * 3, &PixelGrid))
+	if (!allocate_pixel_grid((size_t)width * mode_spec->img_high * 3, &PixelGrid))
 	{
 		free(Image);
 		fprintf(stderr, "Unable to allocate memory for PixelGrid\n");
@@ -295,9 +295,9 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 	}
 
 	init_hann_windows(Hann, HannLens);
-	compute_channel_timing(mode_spec, ChanStart, ChanLen);
+	compute_channel_timing(mode_spec, width, ChanStart, ChanLen);
 
-	if (!build_pixel_grid(mode_spec, rate, skip, ChanStart, ChanLen, PixelGrid, &pixel_count))
+	if (!build_pixel_grid(mode_spec, width, rate, skip, ChanStart, ChanLen, PixelGrid, &pixel_count))
 	{
 		free(Image);
 		free(PixelGrid);
@@ -549,44 +549,44 @@ bool get_image(const sstv_mode_spec_t *mode_spec, double rate, int skip)
 				Channel = PixelGrid[PixelIdx].Channel;
 
 				// Store pixel
-				Image[(y * mode_spec->img_wide + x) * 3 + Channel] = lum_cache[SampleNum];
+				Image[(y * width + x) * 3 + Channel] = lum_cache[SampleNum];
 
 				// Some modes have R-Y & B-Y channels that are twice the height of the Y channel
 				if (Channel > 0 && (mode_spec->mode == Robot_36))
-					Image[((y + 1) * mode_spec->img_wide + x) * 3 + Channel] = lum_cache[SampleNum];
+					Image[((y + 1) * width + x) * 3 + Channel] = lum_cache[SampleNum];
 
-				if (x == mode_spec->img_wide - 1 || PixelGrid[PixelIdx].Last)
+				if (x == width - 1 || PixelGrid[PixelIdx].Last)
 				{
 					if (verbose > 1)
 						printf("Transfer line to BMP!\n");
 
-					for (tx = 0; tx < mode_spec->img_wide; tx++)
+					for (tx = 0; tx < width; tx++)
 					{
 						switch (mode_spec->color_enc)
 						{
 
 						case RGB:
-							bmp_plot(tx, y, RED, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
-							bmp_plot(tx, y, GREEN, Image[(y * mode_spec->img_wide + tx) * 3 + 1]);
-							bmp_plot(tx, y, BLUE, Image[(y * mode_spec->img_wide + tx) * 3 + 2]);
+							bmp_plot(tx, y, RED, Image[(y * width + tx) * 3 + 0]);
+							bmp_plot(tx, y, GREEN, Image[(y * width + tx) * 3 + 1]);
+							bmp_plot(tx, y, BLUE, Image[(y * width + tx) * 3 + 2]);
 							break;
 
 						case GBR:
-							bmp_plot(tx, y, RED, Image[(y * mode_spec->img_wide + tx) * 3 + 2]);
-							bmp_plot(tx, y, GREEN, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
-							bmp_plot(tx, y, BLUE, Image[(y * mode_spec->img_wide + tx) * 3 + 1]);
+							bmp_plot(tx, y, RED, Image[(y * width + tx) * 3 + 2]);
+							bmp_plot(tx, y, GREEN, Image[(y * width + tx) * 3 + 0]);
+							bmp_plot(tx, y, BLUE, Image[(y * width + tx) * 3 + 1]);
 							break;
 
 						case YUV:
-							bmp_plot(tx, y, RED, clip((100 * Image[(y * mode_spec->img_wide + tx) * 3 + 0] + 140 * Image[(y * mode_spec->img_wide + tx) * 3 + 1] - 17850) / 100.0));
-							bmp_plot(tx, y, GREEN, clip((100 * Image[(y * mode_spec->img_wide + tx) * 3 + 0] - 71 * Image[(y * mode_spec->img_wide + tx) * 3 + 1] - 33 * Image[(y * mode_spec->img_wide + tx) * 3 + 2] + 13260) / 100.0));
-							bmp_plot(tx, y, BLUE, clip((100 * Image[(y * mode_spec->img_wide + tx) * 3 + 0] + 178 * Image[(y * mode_spec->img_wide + tx) * 3 + 2] - 22695) / 100.0));
+							bmp_plot(tx, y, RED, clip((100 * Image[(y * width + tx) * 3 + 0] + 140 * Image[(y * width + tx) * 3 + 1] - 17850) / 100.0));
+							bmp_plot(tx, y, GREEN, clip((100 * Image[(y * width + tx) * 3 + 0] - 71 * Image[(y * width + tx) * 3 + 1] - 33 * Image[(y * width + tx) * 3 + 2] + 13260) / 100.0));
+							bmp_plot(tx, y, BLUE, clip((100 * Image[(y * width + tx) * 3 + 0] + 178 * Image[(y * width + tx) * 3 + 2] - 22695) / 100.0));
 							break;
 
 						case BW:
-							bmp_plot(tx, y, RED, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
-							bmp_plot(tx, y, GREEN, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
-							bmp_plot(tx, y, BLUE, Image[(y * mode_spec->img_wide + tx) * 3 + 0]);
+							bmp_plot(tx, y, RED, Image[(y * width + tx) * 3 + 0]);
+							bmp_plot(tx, y, GREEN, Image[(y * width + tx) * 3 + 0]);
+							bmp_plot(tx, y, BLUE, Image[(y * width + tx) * 3 + 0]);
 							break;
 						}
 					}

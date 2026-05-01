@@ -18,6 +18,6 @@
 #define _IMAGE_H_
 #include "modespec.h"
 
-bool get_image(const sstv_mode_spec_t *mode, double rate, int skip);
+bool get_image(const sstv_mode_spec_t *mode, uint16_t width, double rate, int skip);
 
 #endif

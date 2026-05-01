@@ -27,35 +27,46 @@ sstv_mode_t vis_map(uint8_t vis)
 {
 	switch (vis)
 	{
-	case Robot_8_BW:
-	case Robot_24:
-	case Robot_12:
-	case Robot_12_BW:
-	case Robot_36:
-	case Robot_24_BW:
-	case Robot_72:
-	case Martin_4:
-	case Martin_3:
-	case Martin_2:
-	case Martin_1:
-	case Wraase_S2_180:
-	case Wraase_S2_30:
-	case Scottie_2:
-	case Wraase_S2_60:
-	case Scottie_1:
-	case Wraase_S2_120:
-	case Scottie_DX:
-	case PD_50:
-	case PD_290:
-	case PD_120:
-	case PD_180:
-	case PD_240:
-	case PD_160:
-	case PD_90:
-	case Pasokon_3:
-	case Pasokon_5:
-	case Pasokon_7:
+	case 2:  // Robot_8_BW
+	case 0:  // Robot_12
+	case 6:  // Robot_12_BW
+	case 4:  // Robot_24
+	case 10: // Robot_24_BW
+	case 8:  // Robot_36
+	case 12: // Robot_72
 		break;
+
+	case 32: // Martin_4
+	case 36: // Martin_3
+	case 40: // Martin_2
+	case 44: // Martin_1
+		break;
+
+	case 51: // Wraase_S2_30
+	case 59: // Wraase_S2_60
+	case 63: // Wraase_S2_120
+	case 55: // Wraase_S2_180
+		break;
+
+	case 60: // Scottie_1
+	case 56: // Scottie_2
+	case 76: // Scottie_DX
+		break;
+
+	case 93: // PD_50
+	case 99: // PD_90
+	case 95: // PD_120
+	case 98: // PD_160
+	case 96: // PD_180
+	case 97: // PD_240
+	case 94: // PD_290
+		break;
+
+	case 113: // Pasokon_3
+	case 114: // Pasokon_5
+	case 115: // Pasokon_7
+		break;
+
 	default:
 		return UNKNOWN;
 	}
@@ -72,7 +83,6 @@ sstv_mode_t vis_map(uint8_t vis)
 
 sstv_mode_t get_VIS()
 {
-
 	int VIS = 0, Parity = 0, HedrPtr = 0;
 	int FFTLen = 2048, i = 0, j = 0, k = 0, MaxBin = 0;
 	double Power[2048] = {0}, HedrBuf[100] = {0}, tone[100] = {0}, Hann[882] = {0};
@@ -179,8 +189,8 @@ sstv_mode_t get_VIS()
 
 						if (Parity != ParityBit)
 						{
-							printf("Parity fail\n");
-							got_VIS = false;
+						 	printf("Parity fail\n");
+						 	got_VIS = false;
 						}
 						else if (vis_map(VIS) == UNKNOWN)
 						{

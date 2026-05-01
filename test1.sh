@@ -4,5 +4,5 @@ echo "Testing ${1} -> ${testfile}.bmp"
 # create a copy to not have to rezip and cause a git diff
 cp ${1} TESTDATA/_${testfile}.wav.gz
 gunzip TESTDATA/_${testfile}.wav.gz
-./slowrx-cli -g -o TESTDATA/${testfile}.bmp TESTDATA/_${testfile}.wav
+./slowrx-cli -v -o TESTDATA/${testfile}.bmp TESTDATA/_${testfile}.wav
 rm TESTDATA/_${testfile}.wav

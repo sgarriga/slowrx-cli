@@ -1,3 +1,5 @@
 slowrx-cli
 *.o
 *.bmp
+TESTDATA/*wav
+TESTDATA/*bmp
